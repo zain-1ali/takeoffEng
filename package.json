@@ -13,7 +13,9 @@
     "dev:frontend": "npm run dev -w frontend",
     "dev:backend": "npm run dev -w backend",
     "build": "npm run build -w @takeoff/engine && npm run build -w backend && npm run build -w frontend",
-    "build:engine": "npm run build -w @takeoff/engine"
+    "build:engine": "npm run build -w @takeoff/engine",
+    "build:api": "npm run build -w @takeoff/engine && npm run build -w backend",
+    "start:api": "npm run start -w backend"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
