@@ -1,0 +1,514 @@
+// TakeOff Studio – Prisma schema (PostgreSQL 16)
+// Money, rates and quantities use Decimal(18,4). Numeric user inputs inside documents are stored as raw strings
+// (formulas allowed, e.g. "20*15+4*2.5") and evaluated only by packages/engine.
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ───────────────────────── enums ─────────────────────────
+enum Role {
+  OWNER
+  ADMIN
+  EDITOR
+  COMMENTER
+  VIEWER
+}
+enum BuildingType {
+  FOUNDATION
+  SINGLE
+  MULTI
+  ROAD
+  BRIDGE
+}
+enum Stage {
+  CONCEPT
+  PRE_TENDER
+  TENDER
+  CONTRACT
+  VALUATION
+  FINAL_ACCOUNT
+}
+enum RoofMode {
+  SIMPLE
+  COMPLEX
+}
+enum TaskStatus {
+  TODO
+  DOING
+  REVIEW
+  DONE
+}
+enum AnchorType {
+  PROJECT
+  BOQ_ITEM
+  RATE_LINE
+  MEMBER_TYPE
+  PLACEMENT
+  ROOF_PLANE
+  ROOF_LINE
+}
+enum ResourceCategory {
+  LABOUR
+  MATERIAL
+  PLANT
+  SUBCONTRACT
+}
+enum ManualRateKind {
+  BOQ
+  BOM
+}
+enum ExportKind {
+  BOQ_PDF
+  BOM_PDF
+  RATE_PDF
+  BBS_PDF
+  DIMS_PDF
+  FULL_XLSX
+}
+enum JobStatus {
+  QUEUED
+  RUNNING
+  DONE
+  FAILED
+}
+enum PlanId {
+  STARTER
+  PROFESSIONAL
+  TEAM
+  ENTERPRISE
+}
+enum BillingCycle {
+  MONTHLY
+  ANNUAL
+}
+enum Provider {
+  STRIPE
+  FLUTTERWAVE
+  PAYSTACK
+  INVOICE
+}
+enum SubStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  INCOMPLETE
+}
+enum InvoiceStatus {
+  DRAFT
+  OPEN
+  PAID
+  VOID
+  UNCOLLECTIBLE
+}
+enum CheckoutStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  EXPIRED
+}
+
+// ───────────────────────── identity & tenancy ─────────────────────────
+model User {
+  id            String       @id @default(cuid())
+  email         String       @unique
+  name          String?
+  avatarKey     String?
+  locale        String       @default("en")
+  totpSecretEnc String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  deletedAt     DateTime?
+  memberships   Membership[]
+  sessions      Session[]
+  notifications Notification[]
+}
+
+model Session {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshHash String
+  userAgent   String?
+  ip          String?
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  @@index([userId])
+}
+
+model MagicLinkToken {
+  id        String    @id @default(cuid())
+  email     String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  @@index([email])
+}
+
+model Organization {
+  id                  String        @id @default(cuid())
+  name                String
+  slug                String        @unique
+  logoKey             String?
+  defaultCurrency     String        @default("USD")
+  numberLocale        String        @default("en-GB")
+  taxName             String        @default("VAT")
+  taxRate             Decimal       @default(0) @db.Decimal(6, 3)
+  measurementStandard String?
+  region              String        @default("default")
+  ssoConfig           Json?
+  databankCurrency    String        @default("USD")
+  databankVersion     Int           @default(1)
+  priceBasis          String        @default("Indicative starter prices – replace with your local rates")
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  members             Membership[]
+  invitations         Invitation[]
+  projects            Project[]
+  resources           Resource[]
+  subscription        Subscription?
+  invoices            Invoice[]
+  auditLogs           AuditLog[]
+}
+
+model Membership {
+  id        String       @id @default(cuid())
+  orgId     String
+  userId    String
+  role      Role
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime     @default(now())
+  @@unique([orgId, userId])
+  @@index([userId])
+}
+
+model Invitation {
+  id          String       @id @default(cuid())
+  orgId       String
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  email       String
+  role        Role
+  tokenHash   String       @unique
+  invitedById String
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime     @default(now())
+  @@index([orgId])
+}
+
+// ───────────────────────── projects & documents ─────────────────────────
+model Project {
+  id               String          @id @default(cuid())
+  orgId            String
+  org              Organization    @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  name             String
+  buildingType     BuildingType
+  stage            Stage           @default(PRE_TENDER)
+  reference        String?
+  revision         String?
+  description      String?
+  location         String?
+  drawings         String?
+  contract         String?
+  startDate        String?
+  duration         String?
+  measurementBasis String?
+  currency         String
+  currencyCustom   String?
+  numberLocale     String
+  taxName          String          @default("VAT")
+  taxRate          Decimal         @default(0) @db.Decimal(6, 3)
+  contingencyRate  Decimal         @default(5) @db.Decimal(6, 3)
+  roofMode         RoofMode        @default(SIMPLE)
+  databankCurrency String          @default("USD")
+  fxRate           Decimal         @default(1) @db.Decimal(18, 6)
+  coverImageKey    String?
+  stakeholders     Json            @default("[]") // [{role, org, contact}]
+  params           Json            @default("[]") // [{label, value}]
+  summary          Json?                          // cached engine totals for cards/dashboards
+  createdById      String
+  archivedAt       DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  document         ProjectDocument?
+  versions         ProjectVersion[]
+  comments         Comment[]
+  tasks            Task[]
+  activities       Activity[]
+  customRates      CustomRate[]
+  manualRates      ManualRate[]
+  rateSettings     RateSettings?
+  exports          ExportJob[]
+  @@index([orgId, updatedAt])
+  @@index([orgId, buildingType, stage])
+}
+
+/// yState = binary Yjs state; stateJson = plain JSON mirror consumed by packages/engine
+/// (types, placements, levels, rules, grades, mix, material factors, roof types, roofx planes/lines/openings/trusses …)
+model ProjectDocument {
+  projectId   String   @id
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  yState      Bytes
+  stateJson   Json
+  version     Int      @default(1)
+  updatedById String?
+  updatedAt   DateTime @updatedAt
+}
+
+model ProjectVersion {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  number      Int
+  name        String?
+  note        String?
+  auto        Boolean  @default(false)
+  stateJson   Json
+  summary     Json
+  createdById String
+  createdAt   DateTime @default(now())
+  @@unique([projectId, number])
+  @@index([projectId, createdAt])
+}
+
+// ───────────────────────── collaboration ─────────────────────────
+model Comment {
+  id           String     @id @default(cuid())
+  projectId    String
+  project      Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  anchorType   AnchorType
+  anchorId     String     // e.g. BOQ code "RFVAL_RF1", member type id, roof plane id, "_project"
+  parentId     String?
+  body         String
+  mentions     String[]
+  authorId     String
+  resolvedAt   DateTime?
+  resolvedById String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  deletedAt    DateTime?
+  @@index([projectId, anchorType, anchorId])
+}
+
+model Task {
+  id          String      @id @default(cuid())
+  projectId   String
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  status      TaskStatus  @default(TODO)
+  assigneeId  String?
+  dueDate     DateTime?
+  anchorType  AnchorType?
+  anchorId    String?
+  position    Float
+  createdById String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  @@index([projectId, status, position])
+}
+
+model Activity {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  actorId   String
+  verb      String   // saved_version, commented, moved_task, restored_version, changed_roof_mode …
+  data      Json
+  createdAt DateTime @default(now())
+  @@index([projectId, createdAt])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orgId     String
+  kind      String
+  data      Json
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+  @@index([userId, readAt])
+}
+
+// ───────────────────────── pricing ─────────────────────────
+model Resource {
+  id          String           @id @default(cuid())
+  orgId       String
+  org         Organization     @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  code        String           // L01, M46, E08, S20, R24 …
+  category    ResourceCategory
+  name        String
+  unit        String
+  rate        String           // raw input, formulas allowed; evaluated by engine n()
+  rateValue   Decimal          @db.Decimal(18, 4) // evaluated value, kept in sync on write for SQL reporting
+  currency    String
+  note        String?
+  updatedById String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  @@unique([orgId, code])
+  @@index([orgId, category])
+}
+
+/// Per-project edited build-up for one BOQ code. lines: [{resourceCode, qty (raw string or number), note}]
+model CustomRate {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  itemCode    String
+  lines       Json
+  updatedById String
+  updatedAt   DateTime @updatedAt
+  @@unique([projectId, itemCode])
+}
+
+model ManualRate {
+  id          String         @id @default(cuid())
+  projectId   String
+  project     Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  itemCode    String         // BOQ code or BOM material code (e.g. "RES-M46", "BAR16")
+  kind        ManualRateKind @default(BOQ)
+  rate        String         // raw input, formulas allowed
+  rateValue   Decimal        @db.Decimal(18, 4)
+  updatedById String
+  updatedAt   DateTime       @updatedAt
+  @@unique([projectId, itemCode, kind])
+}
+
+model RateSettings {
+  projectId   String  @id
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  toolsPct    Decimal @default(3) @db.Decimal(6, 3)
+  overheadPct Decimal @default(10) @db.Decimal(6, 3)
+  profitPct   Decimal @default(10) @db.Decimal(6, 3)
+  version     Int     @default(1)
+}
+
+// ───────────────────────── exports ─────────────────────────
+model ExportJob {
+  id            String     @id @default(cuid())
+  projectId     String
+  project       Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  kind          ExportKind
+  status        JobStatus  @default(QUEUED)
+  progress      Int        @default(0)
+  fileKey       String?
+  error         String?
+  watermark     Boolean    @default(false)
+  requestedById String
+  createdAt     DateTime   @default(now())
+  finishedAt    DateTime?
+  @@index([projectId, createdAt])
+}
+
+// ───────────────────────── billing ─────────────────────────
+model Subscription {
+  id                     String       @id @default(cuid())
+  orgId                  String       @unique
+  org                    Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  plan                   PlanId       @default(STARTER)
+  cycle                  BillingCycle @default(MONTHLY)
+  seats                  Int          @default(1)
+  status                 SubStatus    @default(ACTIVE)
+  provider               Provider?
+  providerCustomerEnc    String?
+  providerSubscriptionId String?
+  currentPeriodStart     DateTime?
+  currentPeriodEnd       DateTime?
+  cancelAtPeriodEnd      Boolean      @default(false)
+  pendingPlan            PlanId?
+  pendingSeats           Int?
+  dunningStep            Int          @default(0)
+  updatedAt              DateTime     @updatedAt
+}
+
+model CheckoutSession {
+  id          String         @id @default(cuid())
+  orgId       String
+  provider    Provider
+  reference   String         @unique // Stripe session id or tx_ref / Paystack reference
+  plan        PlanId
+  cycle       BillingCycle
+  seats       Int
+  amount      Decimal        @db.Decimal(18, 2)
+  currency    String
+  phone       String?
+  network     String?
+  status      CheckoutStatus @default(PENDING)
+  createdById String
+  createdAt   DateTime       @default(now())
+  completedAt DateTime?
+  @@index([orgId, createdAt])
+}
+
+model Invoice {
+  id                String        @id @default(cuid())
+  orgId             String
+  org               Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  provider          Provider
+  providerInvoiceId String?
+  number            String        @unique
+  amount            Decimal       @db.Decimal(18, 2)
+  tax               Decimal       @default(0) @db.Decimal(18, 2)
+  currency          String
+  status            InvoiceStatus @default(OPEN)
+  pdfKey            String?
+  issuedAt          DateTime
+  dueAt             DateTime?
+  paidAt            DateTime?
+  @@index([orgId, issuedAt])
+}
+
+/// Webhook idempotency: id = provider event id
+model PaymentEvent {
+  id          String    @id
+  provider    Provider
+  type        String
+  payload     Json
+  receivedAt  DateTime  @default(now())
+  processedAt DateTime?
+  error       String?
+}
+
+// ───────────────────────── platform ─────────────────────────
+model Outbox {
+  id          String    @id @default(cuid())
+  topic       String    // e.g. comment.created
+  room        String    // project:{id} | org:{id} | user:{id}
+  payload     Json
+  createdAt   DateTime  @default(now())
+  publishedAt DateTime?
+  attempts    Int       @default(0)
+  @@index([publishedAt, createdAt])
+}
+
+model AuditLog {
+  id        String        @id @default(cuid())
+  orgId     String?
+  org       Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
+  actorId   String?
+  action    String
+  target    String?
+  ip        String?
+  data      Json?
+  createdAt DateTime      @default(now())
+  @@index([orgId, createdAt])
+}
+
+model FeatureFlag {
+  key       String   @id
+  enabled   Boolean  @default(false)
+  orgIds    String[]
+  updatedAt DateTime @updatedAt
+}

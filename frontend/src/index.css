@@ -1,0 +1,361 @@
+@import "tailwindcss";
+@import "./landing.css";
+@import "./editor.css";
+
+:root {
+  --paper: #f3f4f2;
+  --surface: #ffffff;
+  --sunk: #e6e8e5;
+  --line: #cdd1cc;
+  --ink: #18232e;
+  --muted: #5e6973;
+  --input: #1f55a8;
+  --inputbg: #fffbea;
+  --hivis: #e3a800;
+  --hivis-soft: #fff1c2;
+  --warn: #b3261e;
+  --warnbg: #fce9e7;
+  --ok: #2e6b3f;
+  --soil: #c9b89a;
+  --soil-dark: #a8946f;
+  --conc: #c3c7c9;
+  --blind: #8e9496;
+  --steel: #8a3f17;
+  --core: #2f5d8a;
+  --sans: "Barlow", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --cond: "Barlow Semi Condensed", "Arial Narrow", Arial, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #12171c;
+    --surface: #1a2128;
+    --sunk: #232c34;
+    --line: #34404a;
+    --ink: #e7ebee;
+    --muted: #9aa6b0;
+    --input: #8db8ff;
+    --inputbg: #1f2a36;
+    --hivis: #f0be2a;
+    --hivis-soft: #3a3118;
+    --warn: #ff8a80;
+    --warnbg: #3a1f1d;
+    --ok: #7cc48e;
+    --soil: #5c5140;
+    --soil-dark: #7a6b52;
+    --conc: #6f777c;
+    --blind: #50575b;
+    --steel: #f09a66;
+    --core: #7fa8d6;
+  }
+}
+
+:root[data-theme="dark"] {
+  --paper: #12171c;
+  --surface: #1a2128;
+  --sunk: #232c34;
+  --line: #34404a;
+  --ink: #e7ebee;
+  --muted: #9aa6b0;
+  --input: #8db8ff;
+  --inputbg: #1f2a36;
+  --hivis: #f0be2a;
+  --hivis-soft: #3a3118;
+  --warn: #ff8a80;
+  --warnbg: #3a1f1d;
+  --ok: #7cc48e;
+  --soil: #5c5140;
+  --soil-dark: #7a6b52;
+  --conc: #6f777c;
+  --blind: #50575b;
+  --steel: #f09a66;
+  --core: #7fa8d6;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-sunk: var(--sunk);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-input: var(--input);
+  --color-inputbg: var(--inputbg);
+  --color-hivis: var(--hivis);
+  --color-hivis-soft: var(--hivis-soft);
+  --color-warn: var(--warn);
+  --color-warnbg: var(--warnbg);
+  --color-ok: var(--ok);
+  --color-soil: var(--soil);
+  --color-soil-dark: var(--soil-dark);
+  --color-conc: var(--conc);
+  --color-blind: var(--blind);
+  --color-steel: var(--steel);
+  --color-core: var(--core);
+  --font-sans: var(--sans);
+  --font-cond: var(--cond);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+input,
+select {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--hivis);
+  outline-offset: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.f {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.f > label,
+.f .lab {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.box {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--inputbg);
+}
+
+.box:focus-within {
+  border-color: var(--hivis);
+  box-shadow: 0 0 0 3px var(--hivis-soft);
+}
+
+.box input,
+.box select {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--input);
+  font-family: var(--cond);
+  font-weight: 600;
+  font-size: 17px;
+  padding: 6px 9px;
+  font-variant-numeric: tabular-nums;
+}
+
+.box select {
+  font-family: var(--sans);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.box input.t {
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.box input:focus,
+.box select:focus {
+  outline: none;
+}
+
+.box .u {
+  display: grid;
+  place-items: center;
+  padding: 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+  border-left: 1px solid var(--line);
+  background: var(--sunk);
+  white-space: nowrap;
+}
+
+.box .stp {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  width: 26px;
+  font-size: 16px;
+  flex: none;
+}
+
+.box .stp:hover {
+  background: var(--sunk);
+  color: var(--ink);
+}
+
+.box.compact input {
+  font-size: 15px;
+  padding: 4px 6px;
+  min-width: 56px;
+}
+
+.box[data-eq] {
+  overflow: visible;
+}
+
+.box.exprok {
+  border-color: var(--ok);
+}
+
+.box.exprbad {
+  border-color: var(--warn);
+}
+
+.box[data-eq]::after {
+  content: attr(data-eq);
+  position: absolute;
+  right: 6px;
+  bottom: -9px;
+  background: var(--ok);
+  color: #fff;
+  font-family: var(--cond);
+  font-weight: 700;
+  font-size: 11px;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 999px;
+  pointer-events: none;
+  z-index: 2;
+  white-space: nowrap;
+}
+
+.box.exprbad[data-eq]::after {
+  background: var(--warn);
+}
+
+.readout {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 7px 12px;
+  background: var(--sunk);
+  border-radius: 7px;
+}
+
+.readout small {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.readout b {
+  font-family: var(--cond);
+  font-size: 18px;
+}
+
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+
+.switch input {
+  appearance: none;
+  width: 40px;
+  height: 22px;
+  border-radius: 11px;
+  background: var(--line);
+  position: relative;
+  margin: 0;
+  cursor: pointer;
+  flex: none;
+}
+
+.switch input::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: left 0.15s;
+}
+
+.switch input:checked {
+  background: var(--ok);
+}
+
+.switch input:checked::after {
+  left: 21px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.chip {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 999px;
+  min-width: 40px;
+  padding: 4px 9px;
+  font-family: var(--cond);
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.chip[aria-pressed="true"] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+@media print {
+  .box[data-eq]::after {
+    display: none;
+  }
+}
