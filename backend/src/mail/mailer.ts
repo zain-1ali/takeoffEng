@@ -105,41 +105,6 @@ async function sendWithResend(
   }
 }
 
-export async function sendMagicLinkEmail(params: {
-  to: string;
-  name?: string;
-  verifyUrl: string;
-}): Promise<void> {
-  const minutes = Math.max(1, Math.round(env().MAGIC_LINK_TTL_SECONDS / 60));
-  const greeting = params.name ? `Hi ${params.name},` : "Hi,";
-  const text = [
-    greeting,
-    "",
-    "Someone requested a sign-in to TakeOff Studio for this email address.",
-    "If that was you, open the address below to continue. You do not need a password.",
-    "",
-    params.verifyUrl,
-    "",
-    `This sign-in expires in ${minutes} minutes.`,
-    "If you did not ask for this, you can ignore the message. Nobody can sign in without this email.",
-    "",
-    "TakeOff Studio",
-  ].join("\n");
-  await sendMail({
-    to: params.to,
-    subject: "Sign in to TakeOff Studio",
-    text,
-    html: emailLayout({
-      title: "Sign in to TakeOff Studio",
-      intro: greeting,
-      body: "Someone requested a sign-in for this email address. If that was you, continue below. You do not need a password.",
-      actionLabel: "Continue sign-in",
-      actionUrl: params.verifyUrl,
-      footer: `This sign-in expires in ${minutes} minutes. If you did not ask for this, ignore the message.`,
-    }),
-  });
-}
-
 export async function sendInviteEmail(params: {
   to: string;
   orgName: string;

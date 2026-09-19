@@ -51,9 +51,15 @@ export function InvitePage() {
               <b>{preview.orgName}</b> invited {preview.email} as {preview.role.toLowerCase()}.
             </p>
             {!auth.user ? (
-              <Link className="btn primary full" to={`/login?next=/invite/${token}`}>
-                Sign in to accept
-              </Link>
+              <>
+                <Link className="btn primary full" to={`/login?next=/invite/${token}`}>
+                  Sign in to accept
+                </Link>
+                <p className="mt-4 text-sm text-muted">
+                  New here?{" "}
+                  <Link to={`/signup?next=/invite/${token}`}>Create an account</Link>
+                </p>
+              </>
             ) : (
               <button className="btn primary full" type="button" disabled={busy} onClick={() => void accept()}>
                 {busy ? "Joining…" : "Accept invitation"}

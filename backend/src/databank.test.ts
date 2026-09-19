@@ -148,13 +148,13 @@ describe("Phase 10 databank and rates", () => {
 
   async function signup(email: string) {
     const agent = request.agent(app);
-    const link = await agent.post("/v1/auth/magic-link").send({ email, name: "Phase Ten" });
-    const verified = await agent.post("/v1/auth/verify").send({
-      token: link.body.devToken,
+    const signedUp = await agent.post("/v1/auth/signup").send({
+      email,
+      password: "password1",
       name: "Phase Ten",
       orgName: `${email} QS`,
     });
-    const token = verified.body.accessToken as string;
+    const token = signedUp.body.accessToken as string;
     const me = await agent.get("/v1/me").set("Authorization", `Bearer ${token}`);
     const orgId = me.body.org.id as string;
     return {

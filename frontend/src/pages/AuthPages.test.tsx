@@ -27,18 +27,20 @@ describe("auth screens", () => {
   beforeEach(() => {
     auth.user = null;
     auth.token = null;
+    auth.setSession.mockResolvedValue(undefined);
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () =>
-        new Response(JSON.stringify({ sent: true, devVerifyUrl: "http://localhost:5173/verify?token=devtoken" }), {
-          status: 202,
-          headers: { "Content-Type": "application/json" },
-        }),
+      vi.fn(
+        async () =>
+          new Response(JSON.stringify({ accessToken: "tok_1" }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }),
       ),
     );
   });
 
-  it("sends a magic link from the login form", async () => {
+  it("signs in with email and password", async () => {
     const user = userEvent.setup();
     render(
       <MemoryRouter>
@@ -46,15 +48,19 @@ describe("auth screens", () => {
       </MemoryRouter>,
     );
     await user.type(screen.getByLabelText("Email"), "qs@example.com");
-    await user.click(screen.getByRole("button", { name: "Send magic link" }));
-    expect(await screen.findByText(/Check qs@example.com/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Open the development link" })).toHaveAttribute(
-      "href",
-      "/verify?token=devtoken",
+    await user.type(screen.getByLabelText("Password"), "password1");
+    await user.click(screen.getByRole("button", { name: "Sign in" }));
+    expect(auth.setSession).toHaveBeenCalledWith("tok_1");
+    expect(fetch).toHaveBeenCalledWith(
+      "/v1/auth/login",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ email: "qs@example.com", password: "password1" }),
+      }),
     );
   });
 
-  it("stores the organisation name when starting a workspace", async () => {
+  it("creates a workspace with email and password", async () => {
     const user = userEvent.setup();
     render(
       <MemoryRouter>
@@ -64,11 +70,20 @@ describe("auth screens", () => {
     await user.type(screen.getByLabelText("Your name"), "Ada");
     await user.type(screen.getByLabelText("Organisation"), "Ada QS");
     await user.type(screen.getByLabelText("Email"), "ada@example.com");
-    await user.click(screen.getByRole("button", { name: "Send magic link" }));
-    expect(await screen.findByText(/Check ada@example.com/)).toBeInTheDocument();
-    expect(JSON.parse(sessionStorage.getItem("takeoff.signup") ?? "{}")).toMatchObject({
-      name: "Ada",
-      orgName: "Ada QS",
-    });
+    await user.type(screen.getByLabelText("Password"), "password1");
+    await user.click(screen.getByRole("button", { name: "Create workspace" }));
+    expect(auth.setSession).toHaveBeenCalledWith("tok_1");
+    expect(fetch).toHaveBeenCalledWith(
+      "/v1/auth/signup",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          email: "ada@example.com",
+          password: "password1",
+          name: "Ada",
+          orgName: "Ada QS",
+        }),
+      }),
+    );
   });
 });

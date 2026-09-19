@@ -6,6 +6,7 @@ const userSchema = registerVirtualId(
     {
       _id: stringId(),
       email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+      passwordHash: { type: String, default: null, select: false },
       name: { type: String, default: null },
       avatarKey: { type: String, default: null },
       locale: { type: String, default: "en" },
@@ -37,19 +38,3 @@ sessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 export type SessionDoc = InferSchemaType<typeof sessionSchema> & { id: string };
 export const Session = getModel("Session", sessionSchema);
-
-const magicLinkSchema = registerVirtualId(
-  new Schema(
-    {
-      _id: stringId(),
-      email: { type: String, required: true, lowercase: true, trim: true, index: true },
-      tokenHash: { type: String, required: true, unique: true },
-      expiresAt: { type: Date, required: true },
-      usedAt: { type: Date, default: null },
-    },
-    { ...schemaOptions, updatedAt: false },
-  ),
-);
-
-export type MagicLinkTokenDoc = InferSchemaType<typeof magicLinkSchema> & { id: string };
-export const MagicLinkToken = getModel("MagicLinkToken", magicLinkSchema);

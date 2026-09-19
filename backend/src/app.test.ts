@@ -41,22 +41,29 @@ describe("Phase 3 auth, orgs and databank", () => {
     expect(ready.body.mongodb).toBe("connected");
   });
 
-  it("signs up with a magic link, seeds the databank, and issues tokens", async () => {
+  it("signs up with email and password, seeds the databank, and issues tokens", async () => {
     const agent = request.agent(app);
-    const link = await agent.post("/v1/auth/magic-link").send({
+    const signedUp = await agent.post("/v1/auth/signup").send({
       email: "owner@example.com",
-      name: "Ada Owner",
-    });
-    expect(link.status).toBe(202);
-    expect(link.body.devToken).toMatch(/^[a-f0-9]+$/);
-
-    const verified = await agent.post("/v1/auth/verify").send({
-      token: link.body.devToken,
+      password: "password1",
       name: "Ada Owner",
       orgName: "Ada QS",
     });
-    expect(verified.status).toBe(200);
-    const access = verified.body.accessToken as string;
+    expect(signedUp.status).toBe(201);
+    const access = signedUp.body.accessToken as string;
+
+    const loggedIn = await agent.post("/v1/auth/login").send({
+      email: "owner@example.com",
+      password: "password1",
+    });
+    expect(loggedIn.status).toBe(200);
+    expect(loggedIn.body.accessToken).toBeTruthy();
+
+    const rejected = await agent.post("/v1/auth/login").send({
+      email: "owner@example.com",
+      password: "wrongpass",
+    });
+    expect(rejected.status).toBe(401);
 
     const me = await agent
       .get("/v1/me")
@@ -80,11 +87,10 @@ describe("Phase 3 auth, orgs and databank", () => {
 
   it("invites a member and rejects unauthenticated and cross-org access", async () => {
     const ownerAgent = request.agent(app);
-    const ownerLink = await ownerAgent.post("/v1/auth/magic-link").send({
+    const ownerAuth = await ownerAgent.post("/v1/auth/signup").send({
       email: "lead@example.com",
-    });
-    const ownerAuth = await ownerAgent.post("/v1/auth/verify").send({
-      token: ownerLink.body.devToken,
+      password: "password1",
+      name: "Lead",
       orgName: "Lead Studio",
     });
     const ownerToken = ownerAuth.body.accessToken as string;
@@ -109,11 +115,11 @@ describe("Phase 3 auth, orgs and databank", () => {
     expect(preview.body.orgName).toBe("Lead Studio");
 
     const editorAgent = request.agent(app);
-    const editorLink = await editorAgent.post("/v1/auth/magic-link").send({
+    const editorAuth = await editorAgent.post("/v1/auth/signup").send({
       email: "editor@example.com",
-    });
-    const editorAuth = await editorAgent.post("/v1/auth/verify").send({
-      token: editorLink.body.devToken,
+      password: "password1",
+      name: "Editor",
+      orgName: "Editor Studio",
     });
     const editorToken = editorAuth.body.accessToken as string;
 
@@ -128,11 +134,11 @@ describe("Phase 3 auth, orgs and databank", () => {
       .set("Authorization", `Bearer ${ownerToken}`);
     expect(members.body.members).toHaveLength(2);
 
-    const otherLink = await request(app).post("/v1/auth/magic-link").send({
+    const otherAuth = await request(app).post("/v1/auth/signup").send({
       email: "other@example.com",
-    });
-    const otherAuth = await request(app).post("/v1/auth/verify").send({
-      token: otherLink.body.devToken,
+      password: "password1",
+      name: "Other",
+      orgName: "Other Studio",
     });
     const cross = await request(app)
       .get("/v1/databank")
@@ -143,10 +149,12 @@ describe("Phase 3 auth, orgs and databank", () => {
 
   it("rotates the refresh token cookie", async () => {
     const agent = request.agent(app);
-    const link = await agent.post("/v1/auth/magic-link").send({
+    await agent.post("/v1/auth/signup").send({
       email: "refresh@example.com",
+      password: "password1",
+      name: "Refresh",
+      orgName: "Refresh QS",
     });
-    await agent.post("/v1/auth/verify").send({ token: link.body.devToken });
     const refreshed = await agent.post("/v1/auth/refresh");
     expect(refreshed.status).toBe(200);
     expect(refreshed.body.accessToken).toBeTruthy();

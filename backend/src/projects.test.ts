@@ -191,13 +191,13 @@ describe("Phase 4 projects, documents and reports", () => {
 
   async function signup(email: string) {
     const agent = request.agent(app);
-    const link = await agent.post("/v1/auth/magic-link").send({ email, name: "Phase Four" });
-    const verified = await agent.post("/v1/auth/verify").send({
-      token: link.body.devToken,
+    const signedUp = await agent.post("/v1/auth/signup").send({
+      email,
+      password: "password1",
       name: "Phase Four",
       orgName: "Phase Four QS",
     });
-    const token = verified.body.accessToken as string;
+    const token = signedUp.body.accessToken as string;
     const me = await agent.get("/v1/me").set("Authorization", `Bearer ${token}`);
     const orgId = me.body.org.id as string;
     return {

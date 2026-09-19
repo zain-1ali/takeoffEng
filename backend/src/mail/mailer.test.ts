@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { resetEnv } from "../config/env.js";
-import { resetMailer, sendInviteEmail, sendMagicLinkEmail, sendMail } from "./mailer.js";
+import { resetMailer, sendInviteEmail, sendMail } from "./mailer.js";
 
 describe("mailer", () => {
   afterEach(() => {
@@ -37,16 +37,6 @@ describe("mailer", () => {
       "https://api.resend.com/emails",
       expect.objectContaining({ method: "POST" }),
     );
-  });
-
-  it("builds a magic-link message with the verify URL", async () => {
-    await expect(
-      sendMagicLinkEmail({
-        to: "qs@example.com",
-        name: "Ada",
-        verifyUrl: "http://localhost:5173/verify?token=abc",
-      }),
-    ).resolves.toBeUndefined();
   });
 
   it("builds an invitation message with the accept URL", async () => {
