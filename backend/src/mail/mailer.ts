@@ -34,7 +34,6 @@ function getTransport(): Transporter | null {
     host: settings.SMTP_HOST,
     port,
     secure,
-    family: 4,
     auth: settings.SMTP_USER
       ? { user: settings.SMTP_USER, pass: settings.SMTP_PASS.replaceAll(" ", "") }
       : undefined,
