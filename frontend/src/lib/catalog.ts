@@ -96,6 +96,10 @@ export const BUILDING_TYPES = [
 export type BuildingTypeId = (typeof BUILDING_TYPES)[number]["id"];
 
 export const STARTER_TYPES: readonly BuildingTypeId[] = ["FOUNDATION", "SINGLE"];
+export const ALL_TYPES: readonly BuildingTypeId[] = BUILDING_TYPES.map((item) => item.id);
+
+/** Temporary testing switch. Set to false to restore Starter type limits in the UI. */
+export const UNLOCK_ALL_FEATURES = true;
 
 export const MEASUREMENT_STANDARDS: readonly { value: string; label: string; hint: string }[] = [
   { value: "NRM2", label: "NRM2", hint: "Buildings – New Rules of Measurement" },
@@ -116,6 +120,11 @@ export function defaultStandard(type: BuildingTypeId): string {
 }
 
 export function isAllowedType(type: string, allowed: readonly string[] | null | undefined): boolean {
+  if (UNLOCK_ALL_FEATURES) return ALL_TYPES.includes(type as BuildingTypeId);
   if (!allowed || allowed.length === 0) return STARTER_TYPES.includes(type as BuildingTypeId);
   return allowed.includes(type);
+}
+
+export function hasPaidFeature(enabled: boolean | null | undefined): boolean {
+  return UNLOCK_ALL_FEATURES || Boolean(enabled);
 }

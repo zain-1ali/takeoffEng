@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { DEFAULT_MATERIAL_FACTORS } from "@takeoff/engine";
 import { NumberField, Switch } from "../../../ui/index.js";
+import { hasPaidFeature } from "../../../lib/catalog.js";
 import { asRecord, stringOf } from "../../../lib/doc.js";
 import { useAuth } from "../../auth/AuthProvider.js";
 import { useProject } from "../ProjectProvider.js";
@@ -42,7 +43,7 @@ const FACTOR_FIELDS = [
 
 export function BomScreen() {
   const auth = useAuth();
-  const allowed = Boolean(auth.entitlements?.bom);
+  const allowed = hasPaidFeature(auth.entitlements?.bom);
   const { doc, meta, setPath } = useProject();
   const { bom, params, status, error } = useEditorComputed();
   const [factorsOpen, setFactorsOpen] = useState(false);

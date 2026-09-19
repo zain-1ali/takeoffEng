@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { analyse } from "@takeoff/engine";
 import { useProject } from "../ProjectProvider.js";
 import { usePricedProject } from "../computed.js";
+import { hasPaidFeature } from "../../../lib/catalog.js";
 import { useAuth } from "../../auth/AuthProvider.js";
 import { useEditorComputed } from "../computed.js";
 import { pricingFrom } from "../../editor/runProject.js";
@@ -19,7 +20,7 @@ import { useOptionalDatabank } from "../pricing/DatabankProvider.js";
 
 export function RaReportScreen() {
   const auth = useAuth();
-  const allowed = Boolean(auth.entitlements?.rateAnalysis);
+  const allowed = hasPaidFeature(auth.entitlements?.rateAnalysis);
   const { doc, meta } = useProject();
   const { boq, params, status, error } = useEditorComputed();
   const project = usePricedProject();

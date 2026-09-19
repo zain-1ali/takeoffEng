@@ -34,16 +34,16 @@ describe("new project wizard", () => {
     vi.stubGlobal("fetch", vi.fn());
   });
 
-  it("locks Professional types on Starter and continues with a single-storey job", async () => {
+  it("offers every project type and continues with a single-storey job", async () => {
     const user = userEvent.setup();
     render(
       <MemoryRouter>
         <NewProjectWizard />
       </MemoryRouter>,
     );
-    expect(screen.getByRole("button", { name: /Multi-storey/ })).toBeDisabled();
-    expect(screen.getByRole("button", { name: /^Road/ })).toBeDisabled();
-    expect(screen.getByRole("button", { name: /Concrete bridge/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Multi-storey/ })).toBeEnabled();
+    expect(screen.getByRole("button", { name: /^Road/ })).toBeEnabled();
+    expect(screen.getByRole("button", { name: /Concrete bridge/ })).toBeEnabled();
     await user.click(screen.getByRole("button", { name: /Single storey/ }));
     await user.click(screen.getByRole("button", { name: "Continue" }));
     expect(screen.getByLabelText("Currency")).toBeInTheDocument();

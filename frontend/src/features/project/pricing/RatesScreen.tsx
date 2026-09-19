@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { analyse, n, stdRecipe, type ResourceCategory } from "@takeoff/engine";
 import { NumberField } from "../../../ui/index.js";
+import { hasPaidFeature } from "../../../lib/catalog.js";
 import { asRecord, stringOf } from "../../../lib/doc.js";
 import { formatNumber } from "../../../lib/format.js";
 import { useAuth } from "../../auth/AuthProvider.js";
@@ -16,7 +17,7 @@ import { CAT_COLOR, RATE_CATEGORIES, cloneLines, raOf, type RaLine } from "./hel
 
 export function RatesScreen() {
   const auth = useAuth();
-  const allowed = Boolean(auth.entitlements?.rateAnalysis);
+  const allowed = hasPaidFeature(auth.entitlements?.rateAnalysis);
   const { doc, meta, setPath, replaceDoc } = useProject();
   const { boq, split, status } = useEditorComputed();
   const project = usePricedProject();

@@ -1,5 +1,5 @@
 import { NumberField, TextField } from "../../ui/index.js";
-import { BUILDING_TYPES, isAllowedType } from "../../lib/catalog.js";
+import { ALL_TYPES, BUILDING_TYPES, isAllowedType } from "../../lib/catalog.js";
 import { asRecord, stringOf } from "../../lib/doc.js";
 import { useAuth } from "../auth/AuthProvider.js";
 import { useProject } from "./ProjectProvider.js";
@@ -12,7 +12,7 @@ export function ProjectTypeScreen() {
   const btype = stringOf(doc.btype, "multi");
   const project = asRecord(doc.project);
   const grades = asRecord(doc.grades);
-  const allowed = auth.entitlements?.types ?? ["FOUNDATION", "SINGLE"];
+  const allowed = auth.entitlements?.types ?? ALL_TYPES;
   const levels = Array.isArray(doc.levels) ? doc.levels as Record<string, unknown>[] : [];
   const first = levels[0];
 

@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { analyse, n, type ResourceCategory } from "@takeoff/engine";
 import { NumberField, TextField } from "../../../ui/index.js";
+import { hasPaidFeature } from "../../../lib/catalog.js";
 import { asRecord, stringOf } from "../../../lib/doc.js";
 import { useAuth } from "../../auth/AuthProvider.js";
 import { pricingFrom } from "../../editor/runProject.js";
@@ -14,7 +15,7 @@ import { convertConfirm, FxBanner } from "./FxBanner.js";
 
 export function ResourcesScreen() {
   const auth = useAuth();
-  const allowed = Boolean(auth.entitlements?.rateAnalysis);
+  const allowed = hasPaidFeature(auth.entitlements?.rateAnalysis);
   const { doc, meta, setPath } = useProject();
   const { boq } = useEditorComputed();
   const project = usePricedProject();

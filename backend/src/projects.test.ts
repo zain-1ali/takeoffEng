@@ -38,13 +38,11 @@ describe("Phase 4 projects, documents and reports", () => {
   it("creates a foundation project, versions the document, and matches engine totals", async () => {
     const { orgId, headers } = await signup("phase4@example.com");
 
-    const blockedType = await request(app)
+    const multiType = await request(app)
       .post("/v1/projects")
       .set(headers)
       .send({ buildingType: "MULTI" });
-    expect(blockedType.status).toBe(402);
-    expect(blockedType.body.type).toBe("upgrade_required");
-    expect(blockedType.body.entitlement).toBe("projectType");
+    expect(multiType.status).toBe(201);
 
     const created = await request(app)
       .post("/v1/projects")
@@ -60,13 +58,12 @@ describe("Phase 4 projects, documents and reports", () => {
       .post("/v1/projects")
       .set(headers)
       .send({ buildingType: "SINGLE" });
-    expect(second.status).toBe(402);
-    expect(second.body.entitlement).toBe("maxProjects");
+    expect(second.status).toBe(201);
 
     const listed = await request(app).get("/v1/projects").set(headers);
     expect(listed.status).toBe(200);
-    expect(listed.body.projects).toHaveLength(1);
-    expect(listed.body.projects[0].name).toBe("Pad take-off");
+    expect(listed.body.projects).toHaveLength(3);
+    expect(listed.body.projects.some((row: { name: string }) => row.name === "Pad take-off")).toBe(true);
 
     const document = await request(app).get(`/v1/projects/${projectId}/document`).set(headers);
     expect(document.status).toBe(200);
@@ -151,8 +148,9 @@ describe("Phase 4 projects, documents and reports", () => {
     expect(bbs.status).toBe(200);
     expect(dims.status).toBe(200);
     expect(params.status).toBe(200);
-    expect(bom.status).toBe(402);
-    expect(dashboard.body.materials).toEqual([]);
+    expect(bom.status).toBe(200);
+    expect(bom.body.rows.length).toBeGreaterThan(0);
+    expect(Array.isArray(dashboard.body.materials)).toBe(true);
     expect(boq.body.items.length).toBeGreaterThan(0);
     expect(params.body.params[0]?.[0]).toBe("Project type");
 

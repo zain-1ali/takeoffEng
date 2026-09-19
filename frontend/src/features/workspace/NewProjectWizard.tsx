@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider.js";
 import { api, ApiError } from "../../lib/api.js";
 import {
+  ALL_TYPES,
   BUILDING_TYPES,
   CURRENCIES,
   MEASUREMENT_STANDARDS,
@@ -27,7 +28,7 @@ export function NewProjectWizard() {
   const auth = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const allowed = auth.entitlements?.types ?? ["FOUNDATION", "SINGLE"];
+  const allowed = auth.entitlements?.types ?? ALL_TYPES;
   const initialType = (params.get("type") as BuildingTypeId | null) ?? "SINGLE";
   const [step, setStep] = useState(0);
   const [buildingType, setBuildingType] = useState<BuildingTypeId>(

@@ -33,17 +33,8 @@ describe("Phase 10 databank and rates", () => {
     await memory?.stop();
   });
 
-  it("gates databank writes on Starter and supports CRUD, CSV, adjust and convert on Professional", async () => {
-    const { orgId, headers } = await signup("databank@example.com");
-
-    const blocked = await request(app)
-      .post("/v1/databank")
-      .set(headers)
-      .send({ code: "X99", name: "Blocked", category: "Material", unit: "No.", rate: 1 });
-    expect(blocked.status).toBe(402);
-    expect(blocked.body.entitlement).toBe("rateAnalysis");
-
-    await Subscription.updateOne({ orgId }, { plan: "PROFESSIONAL" });
+  it("supports databank CRUD, CSV, adjust and convert", async () => {
+    const { headers } = await signup("databank@example.com");
 
     const created = await request(app)
       .post("/v1/databank")

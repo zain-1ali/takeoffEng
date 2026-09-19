@@ -6,6 +6,7 @@ import { api, ApiError } from "../../lib/api.js";
 import {
   BUILDING_TYPES,
   STAGE_OPTIONS,
+  UNLOCK_ALL_FEATURES,
   buildingTypeLabel,
   stageLabel,
 } from "../../lib/catalog.js";
@@ -79,6 +80,7 @@ export function WorkspacePage() {
 
   const empty = !busy && projects.length === 0;
   const maxReached = useMemo(() => {
+    if (UNLOCK_ALL_FEATURES) return false;
     const max = auth.entitlements?.maxProjects;
     return max != null && projects.length >= max;
   }, [auth.entitlements?.maxProjects, projects.length]);

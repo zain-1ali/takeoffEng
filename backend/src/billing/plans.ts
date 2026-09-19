@@ -82,6 +82,13 @@ export const PLANS: Record<PlanId, PlanEntitlements> = {
   },
 };
 
+/** Temporary testing switch. Set to false to restore Starter / Professional / Team locks. */
+export const UNLOCK_ALL_FEATURES = true;
+
 export function entitlementsFor(plan: PlanId | string | undefined): PlanEntitlements {
-  return PLANS[(plan as PlanId) in PLANS ? (plan as PlanId) : "STARTER"];
+  const resolved = (plan as PlanId) in PLANS ? (plan as PlanId) : "STARTER";
+  if (UNLOCK_ALL_FEATURES) {
+    return { ...PLANS.ENTERPRISE, plan: resolved };
+  }
+  return PLANS[resolved];
 }

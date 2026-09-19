@@ -3,9 +3,9 @@ import { isAllowedType, STARTER_TYPES } from "./catalog.js";
 import { relativeTime } from "./format.js";
 
 describe("workspace helpers", () => {
-  it("gates Starter types", () => {
+  it("allows every project type while features are unlocked for testing", () => {
     expect(isAllowedType("SINGLE", STARTER_TYPES)).toBe(true);
-    expect(isAllowedType("BRIDGE", STARTER_TYPES)).toBe(false);
+    expect(isAllowedType("BRIDGE", STARTER_TYPES)).toBe(true);
     expect(isAllowedType("ROAD", ["FOUNDATION", "SINGLE", "MULTI", "ROAD", "BRIDGE"])).toBe(true);
   });
 

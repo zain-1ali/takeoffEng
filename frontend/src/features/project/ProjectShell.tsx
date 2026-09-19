@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
-import { BUILDING_TYPES, isAllowedType } from "../../lib/catalog.js";
+import { ALL_TYPES, BUILDING_TYPES, isAllowedType } from "../../lib/catalog.js";
 import { asRecord, stringOf } from "../../lib/doc.js";
 import { formatNumber } from "../../lib/format.js";
 import { useAuth } from "../auth/AuthProvider.js";
@@ -49,7 +49,7 @@ function EditorBody({ view }: { view: string }) {
   const auth = useAuth();
   const { meta, doc, sync, error, setPath, saveNow, reload } = useProject();
   const { result } = useEditorComputed();
-  const allowed = auth.entitlements?.types ?? ["FOUNDATION", "SINGLE"];
+  const allowed = auth.entitlements?.types ?? ALL_TYPES;
   const btype = stringOf(doc?.btype, "multi");
   const project = asRecord(doc?.project);
   const steps = visibleInputSteps(btype);

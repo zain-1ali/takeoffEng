@@ -72,7 +72,10 @@ describe("Phase 3 auth, orgs and databank", () => {
     expect(me.body.user.email).toBe("owner@example.com");
     expect(me.body.role).toBe("OWNER");
     expect(me.body.plan).toBe("STARTER");
-    expect(me.body.entitlements.rateAnalysis).toBe(false);
+    expect(me.body.entitlements.rateAnalysis).toBe(true);
+    expect(me.body.entitlements.types).toEqual(
+      expect.arrayContaining(["FOUNDATION", "SINGLE", "MULTI", "ROAD", "BRIDGE"]),
+    );
     const orgId = me.body.org.id as string;
 
     const databank = await agent
