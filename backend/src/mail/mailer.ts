@@ -24,16 +24,23 @@ function getTransport(): Transporter | null {
     transport = null;
     return null;
   }
+  const gmail = settings.SMTP_HOST.toLowerCase().includes("gmail.com");
+  const port =
+    gmail && settings.NODE_ENV === "production" && settings.SMTP_PORT === 587
+      ? 465
+      : settings.SMTP_PORT;
+  const secure = port === 465 ? true : settings.SMTP_SECURE;
   transport = nodemailer.createTransport({
     host: settings.SMTP_HOST,
-    port: settings.SMTP_PORT,
-    secure: settings.SMTP_SECURE,
+    port,
+    secure,
+    family: 4,
     auth: settings.SMTP_USER
       ? { user: settings.SMTP_USER, pass: settings.SMTP_PASS.replaceAll(" ", "") }
       : undefined,
-    connectionTimeout: 10_000,
-    greetingTimeout: 10_000,
-    socketTimeout: 15_000,
+    connectionTimeout: 20_000,
+    greetingTimeout: 20_000,
+    socketTimeout: 20_000,
   });
   return transport;
 }

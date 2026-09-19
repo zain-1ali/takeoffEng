@@ -18,6 +18,7 @@ export function createApp() {
   const app = express();
   const settings = env();
 
+  if (settings.NODE_ENV === "production") app.set("trust proxy", 1);
   app.disable("x-powered-by");
   app.use(
     helmet({
@@ -41,6 +42,7 @@ export function createApp() {
     standardHeaders: true,
     legacyHeaders: false,
     skip: () => settings.NODE_ENV === "test",
+    validate: { xForwardedForHeader: false },
   });
 
   app.get("/health", (_req, res) => {
