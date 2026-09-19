@@ -29,8 +29,11 @@ function getTransport(): Transporter | null {
     port: settings.SMTP_PORT,
     secure: settings.SMTP_SECURE,
     auth: settings.SMTP_USER
-      ? { user: settings.SMTP_USER, pass: settings.SMTP_PASS }
+      ? { user: settings.SMTP_USER, pass: settings.SMTP_PASS.replaceAll(" ", "") }
       : undefined,
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 15_000,
   });
   return transport;
 }
@@ -55,13 +58,19 @@ export async function sendMail(message: {
     console.info(`[mail] ${message.subject} -> ${message.to}\n${message.text}`);
     return { delivered: false };
   }
-  await sender.sendMail({
-    from: settings.SMTP_FROM,
-    to: message.to,
-    subject: message.subject,
-    text: message.text,
-    html: message.html,
-  });
+  try {
+    await sender.sendMail({
+      from: mailFrom(),
+      to: message.to,
+      subject: message.subject,
+      text: message.text,
+      html: message.html,
+    });
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : "SMTP send failed";
+    console.error("[mail] send failed", detail);
+    throw problem(502, "mail_failed", "Email could not be sent", detail);
+  }
   return { delivered: true };
 }
 
@@ -159,6 +168,22 @@ function emailLayout(params: {
     </table>
   </body>
 </html>`;
+}
+
+function mailFrom(): string {
+  const settings = env();
+  const user = settings.SMTP_USER;
+  const from = settings.SMTP_FROM.trim();
+  if (
+    user &&
+    (!from.includes("@") ||
+      from.includes("you@gmail.com") ||
+      from.includes("noreply@takeoff.local"))
+  ) {
+    const label = from.replace(/<[^>]*>/g, "").replaceAll('"', "").trim() || "TakeOff Studio";
+    return `${label} <${user}>`;
+  }
+  return from;
 }
 
 function escapeHtml(value: string): string {

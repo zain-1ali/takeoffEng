@@ -6,6 +6,7 @@ import helmet from "helmet";
 import { ENGINE_VERSION, ping } from "@takeoff/engine";
 import { authRouter } from "./auth/routes.js";
 import { env } from "./config/env.js";
+import { isAllowedOrigin } from "./config/origins.js";
 import { databankRouter } from "./databank/routes.js";
 import { mongoStatus } from "./db/connect.js";
 import { errorHandler } from "./middleware/error.js";
@@ -18,13 +19,16 @@ export function createApp() {
   const settings = env();
 
   app.disable("x-powered-by");
-  app.use(helmet());
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+    }),
+  );
   app.use(
     cors({
-      origin:
-        settings.NODE_ENV === "production"
-          ? settings.CLIENT_URL
-          : true,
+      origin(origin, callback) {
+        callback(null, isAllowedOrigin(origin));
+      },
       credentials: true,
     }),
   );

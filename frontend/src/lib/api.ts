@@ -28,8 +28,9 @@ export interface ApiOptions {
 
 export function apiUrl(path: string): string {
   if (/^https?:\/\//i.test(path)) return path;
-  const base = String(import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
   const normalized = path.startsWith("/") ? path : `/${path}`;
+  if (import.meta.env.DEV) return normalized;
+  const base = String(import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
   return base ? `${base}${normalized}` : normalized;
 }
 
@@ -44,20 +45,29 @@ export async function api<T>(path: string, options: ApiOptions = {}): Promise<T>
     for (const [key, value] of Object.entries(options.headers)) headers.set(key, value);
   }
 
-  let response: Response;
-  try {
-    response = await fetch(apiUrl(path), {
-      method: options.method ?? (options.body !== undefined ? "POST" : "GET"),
-      headers,
-      credentials: "include",
-      body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
-    });
-  } catch {
-    throw new ApiError(
-      0,
-      "network_error",
-      "Could not reach the API. Check that the backend is running.",
-    );
+  const request = {
+    method: options.method ?? (options.body !== undefined ? "POST" : "GET"),
+    headers,
+    credentials: "include" as const,
+    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+  };
+  const url = apiUrl(path);
+
+  let response: Response | undefined;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      response = await fetch(url, request);
+      break;
+    } catch {
+      if (attempt === 0) {
+        await new Promise((resolve) => setTimeout(resolve, 400));
+        continue;
+      }
+      throw new ApiError(0, "network_error", networkErrorMessage(url));
+    }
+  }
+  if (!response) {
+    throw new ApiError(0, "network_error", networkErrorMessage(url));
   }
 
   if (response.status === 204) return undefined as T;
@@ -72,4 +82,11 @@ export async function api<T>(path: string, options: ApiOptions = {}): Promise<T>
     );
   }
   return data as T;
+}
+
+function networkErrorMessage(url: string): string {
+  if (import.meta.env.DEV) {
+    return "Could not reach the API. Check that the backend is running.";
+  }
+  return `Could not reach the API at ${url}. On Netlify set VITE_API_URL to your Railway HTTPS URL, and on Railway set CLIENT_URL and WEB_URL to this Netlify origin.`;
 }

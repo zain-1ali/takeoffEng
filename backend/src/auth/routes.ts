@@ -31,11 +31,16 @@ authRouter.post(
       })
       .parse(req.body);
     const token = randomToken();
-    await MagicLinkToken.create({
-      email: body.email,
-      tokenHash: sha256(token),
-      expiresAt: new Date(Date.now() + env().MAGIC_LINK_TTL_SECONDS * 1000),
-    });
+    try {
+      await MagicLinkToken.create({
+        email: body.email,
+        tokenHash: sha256(token),
+        expiresAt: new Date(Date.now() + env().MAGIC_LINK_TTL_SECONDS * 1000),
+      });
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : "Database write failed";
+      throw problem(503, "database_unavailable", "Database unavailable", detail);
+    }
     const verifyUrl = `${env().WEB_URL}/verify?token=${token}`;
     await sendMagicLinkEmail({ to: body.email, name: body.name, verifyUrl });
     const payload: Record<string, unknown> = { sent: true };

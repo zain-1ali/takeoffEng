@@ -54,19 +54,25 @@ export async function rotateSession(sessionId: string): Promise<{
   };
 }
 
-export function setRefreshCookie(res: Response, token: string): void {
-  const options: CookieOptions = {
+function refreshCookieOptions(): CookieOptions {
+  const production = env().NODE_ENV === "production";
+  return {
     httpOnly: true,
-    secure: env().NODE_ENV === "production",
-    sameSite: "lax",
+    secure: production,
+    sameSite: production ? "none" : "lax",
     path: "/v1/auth",
-    maxAge: env().REFRESH_TTL_SECONDS * 1000,
   };
-  res.cookie(REFRESH_COOKIE, token, options);
+}
+
+export function setRefreshCookie(res: Response, token: string): void {
+  res.cookie(REFRESH_COOKIE, token, {
+    ...refreshCookieOptions(),
+    maxAge: env().REFRESH_TTL_SECONDS * 1000,
+  });
 }
 
 export function clearRefreshCookie(res: Response): void {
-  res.clearCookie(REFRESH_COOKIE, { path: "/v1/auth" });
+  res.clearCookie(REFRESH_COOKIE, refreshCookieOptions());
 }
 
 export { REFRESH_COOKIE };

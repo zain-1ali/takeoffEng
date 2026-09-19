@@ -32,20 +32,29 @@ export function errorHandler(
     });
     return;
   }
+
+  console.error(err);
+  const message = err instanceof Error ? err.message : "Unknown error";
+  const operational = isOperationalError(message);
   const status =
     typeof err === "object" && err !== null && "status" in err && typeof err.status === "number"
       ? err.status
-      : 500;
-  const detail =
-    env().NODE_ENV === "production"
-      ? "An unexpected error occurred."
-      : err instanceof Error
-        ? err.message
-        : "Unknown error";
+      : operational
+        ? 502
+        : 500;
   res.status(status).type("application/problem+json").json({
-    type: "internal_error",
-    title: "Internal server error",
+    type: operational ? "upstream_error" : "internal_error",
+    title: operational ? "Service unavailable" : "Internal server error",
     status,
-    detail,
+    detail:
+      env().NODE_ENV === "production" && !operational
+        ? "An unexpected error occurred."
+        : message,
   });
+}
+
+function isOperationalError(message: string): boolean {
+  return /EAUTH|Invalid login|SMTP|EENVELOPE|ETIMEDOUT|ECONNECTION|querySrv|Mongo|ECONNREFUSED|ENOTFOUND/i.test(
+    message,
+  );
 }
