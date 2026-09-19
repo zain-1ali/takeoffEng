@@ -40,7 +40,9 @@ function getTransport(): Transporter | null {
     connectionTimeout: 20_000,
     greetingTimeout: 20_000,
     socketTimeout: 20_000,
-  });
+    // Nodemailer forwards this to net.connect; @types omit it.
+    family: 4,
+  } as Parameters<typeof nodemailer.createTransport>[0]);
   return transport;
 }
 
