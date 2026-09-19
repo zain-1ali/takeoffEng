@@ -7,6 +7,7 @@ import { problem, unauthorized } from "../common/problem.js";
 import { env } from "../config/env.js";
 import { requireAuth } from "../middleware/auth.js";
 import { MagicLinkToken, Session, User } from "../models/index.js";
+import { sendMagicLinkEmail } from "../mail/mailer.js";
 import { createOrganization } from "../orgs/service.js";
 import {
   REFRESH_COOKIE,
@@ -36,7 +37,7 @@ authRouter.post(
       expiresAt: new Date(Date.now() + env().MAGIC_LINK_TTL_SECONDS * 1000),
     });
     const verifyUrl = `${env().WEB_URL}/verify?token=${token}`;
-    console.info(`Magic link for ${body.email}: ${verifyUrl}`);
+    await sendMagicLinkEmail({ to: body.email, name: body.name, verifyUrl });
     const payload: Record<string, unknown> = { sent: true };
     if (env().NODE_ENV !== "production") {
       payload.devToken = token;

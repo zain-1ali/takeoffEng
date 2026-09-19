@@ -1,6 +1,7 @@
 import { ENGINE_VERSION, ping } from "@takeoff/engine";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { apiUrl } from "../lib/api.js";
 
 type Health = {
   status: string;
@@ -13,7 +14,7 @@ export function HomePage() {
   const [healthError, setHealthError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/health")
+    fetch(apiUrl("/health"))
       .then(async (res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return (await res.json()) as Health;

@@ -53,13 +53,13 @@ describe("new project wizard", () => {
     const user = userEvent.setup();
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
-      if (url === "/v1/projects" && init?.method === "POST") {
+      if (url.endsWith("/v1/projects") && init?.method === "POST") {
         return new Response(JSON.stringify({ id: "p1", name: "Kigali clinic" }), {
           status: 201,
           headers: { "Content-Type": "application/json" },
         });
       }
-      if (url === "/v1/projects/p1/settings") {
+      if (url.endsWith("/v1/projects/p1/settings")) {
         return new Response(JSON.stringify({ id: "p1" }), {
           headers: { "Content-Type": "application/json" },
         });
@@ -80,14 +80,14 @@ describe("new project wizard", () => {
     await user.click(screen.getByRole("button", { name: "Create project" }));
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "/v1/projects",
+      expect.stringMatching(/\/v1\/projects$/),
       expect.objectContaining({
         method: "POST",
         body: expect.stringContaining("\"buildingType\":\"SINGLE\""),
       }),
     );
     expect(fetchMock).toHaveBeenCalledWith(
-      "/v1/projects/p1/settings",
+      expect.stringMatching(/\/v1\/projects\/p1\/settings$/),
       expect.objectContaining({
         method: "PATCH",
         body: expect.stringContaining("NRM2"),

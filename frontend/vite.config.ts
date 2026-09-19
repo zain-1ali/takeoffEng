@@ -23,6 +23,14 @@ export default defineConfig({
       "/v1": "http://localhost:4000",
     },
   },
+  preview: {
+    port: 4173,
+    proxy: {
+      "/health": "http://localhost:4000",
+      "/ready": "http://localhost:4000",
+      "/v1": "http://localhost:4000",
+    },
+  },
   test: {
     environment: "node",
     fileParallelism: false,

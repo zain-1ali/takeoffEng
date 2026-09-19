@@ -15,6 +15,7 @@ import {
   User,
   type MembershipRole,
 } from "../models/index.js";
+import { sendInviteEmail } from "../mail/mailer.js";
 import { createOrganization } from "./service.js";
 
 export const orgsRouter = Router();
@@ -181,7 +182,13 @@ orgsRouter.post(
       expiresAt: new Date(Date.now() + env().INVITE_TTL_SECONDS * 1000),
     });
     const acceptUrl = `${env().WEB_URL}/invite/${token}`;
-    console.info(`Invite for ${body.email}: ${acceptUrl}`);
+    const org = await Organization.findById(req.params.id);
+    await sendInviteEmail({
+      to: body.email,
+      orgName: org?.name ?? "a workspace",
+      role: body.role,
+      acceptUrl,
+    });
     res.status(201).json({
       id: invitation.id,
       email: invitation.email,

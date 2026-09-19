@@ -48,17 +48,17 @@ describe("ProjectProvider save", () => {
     const user = userEvent.setup();
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
-      if (url === "/v1/projects/p1" && init?.method !== "PATCH") {
+      if (url.endsWith("/v1/projects/p1") && init?.method !== "PATCH") {
         return new Response(JSON.stringify({ id: "p1", name: "Clinic", buildingType: "FOUNDATION" }), {
           headers: { "Content-Type": "application/json" },
         });
       }
-      if (url === "/v1/projects/p1/document" && init?.method === "PUT") {
+      if (url.endsWith("/v1/projects/p1/document") && init?.method === "PUT") {
         return new Response(JSON.stringify({ projectId: "p1", version: 2, stateJson: sampleDoc }), {
           headers: { "Content-Type": "application/json" },
         });
       }
-      if (url === "/v1/projects/p1/document") {
+      if (url.endsWith("/v1/projects/p1/document")) {
         return new Response(JSON.stringify({ projectId: "p1", version: 1, stateJson: sampleDoc }), {
           headers: { "Content-Type": "application/json" },
         });
