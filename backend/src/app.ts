@@ -1,7 +1,6 @@
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import express from "express";
-import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import { ENGINE_VERSION, ping } from "@takeoff/engine";
 import { authRouter } from "./auth/routes.js";
@@ -36,15 +35,6 @@ export function createApp() {
   app.use(express.json({ limit: "8mb" }));
   app.use(cookieParser());
 
-  const authLimit = rateLimit({
-    windowMs: 60_000,
-    limit: 10,
-    standardHeaders: true,
-    legacyHeaders: false,
-    skip: () => settings.NODE_ENV === "test",
-    validate: { xForwardedForHeader: false },
-  });
-
   app.get("/health", (_req, res) => {
     res.json({
       status: "ok",
@@ -65,7 +55,7 @@ export function createApp() {
     res.json({ name: "TakeOff Studio API", version: "0.4.0" });
   });
 
-  app.use("/v1/auth", authLimit, authRouter);
+  app.use("/v1/auth", authRouter);
   app.use("/v1", meRouter);
   app.use("/v1/orgs", orgsRouter);
   app.use("/v1/invitations", invitationsRouter);
