@@ -1,3 +1,4 @@
+import { lookup } from "node:dns/promises";
 import nodemailer from "nodemailer";
 import type { Transporter } from "nodemailer";
 import { problem } from "../common/problem.js";
@@ -13,7 +14,7 @@ export function mailConfigured(): boolean {
   return Boolean(env().SMTP_HOST);
 }
 
-function getTransport(): Transporter | null {
+async function getTransport(): Promise<Transporter | null> {
   if (transport !== undefined) return transport;
   const settings = env();
   if (settings.NODE_ENV === "test") {
@@ -30,19 +31,20 @@ function getTransport(): Transporter | null {
       ? 465
       : settings.SMTP_PORT;
   const secure = port === 465 ? true : settings.SMTP_SECURE;
+  const ipv4 = await lookup(settings.SMTP_HOST, { family: 4 });
+  console.info(`[mail] SMTP ${settings.SMTP_HOST} -> ${ipv4.address}:${port}`);
   transport = nodemailer.createTransport({
-    host: settings.SMTP_HOST,
+    host: ipv4.address,
     port,
     secure,
     auth: settings.SMTP_USER
       ? { user: settings.SMTP_USER, pass: settings.SMTP_PASS.replaceAll(" ", "") }
       : undefined,
-    connectionTimeout: 20_000,
-    greetingTimeout: 20_000,
-    socketTimeout: 20_000,
-    // Nodemailer forwards this to net.connect; @types omit it.
-    family: 4,
-  } as Parameters<typeof nodemailer.createTransport>[0]);
+    tls: { servername: settings.SMTP_HOST },
+    connectionTimeout: 15_000,
+    greetingTimeout: 15_000,
+    socketTimeout: 15_000,
+  });
   return transport;
 }
 
@@ -53,7 +55,7 @@ export async function sendMail(message: {
   html: string;
 }): Promise<{ delivered: boolean }> {
   const settings = env();
-  const sender = getTransport();
+  const sender = await getTransport();
   if (!sender) {
     if (settings.NODE_ENV === "production") {
       throw problem(
@@ -75,9 +77,17 @@ export async function sendMail(message: {
       html: message.html,
     });
   } catch (err) {
-    const detail = err instanceof Error ? err.message : "SMTP send failed";
-    console.error("[mail] send failed", detail);
-    throw problem(502, "mail_failed", "Email could not be sent", detail);
+    const raw = err instanceof Error ? err.message : "SMTP send failed";
+    console.error("[mail] send failed", raw);
+    const blocked = /ENETUNREACH|ETIMEDOUT|timeout|ECONNREFUSED/i.test(raw);
+    throw problem(
+      502,
+      "mail_failed",
+      "Email could not be sent",
+      blocked
+        ? `${raw}. Railway cannot open an SMTP connection to Gmail (IPv6 is unreachable and ports 465/587 are often blocked). Use an HTTP email API such as Resend or SendGrid.`
+        : raw,
+    );
   }
   return { delivered: true };
 }
