@@ -1,11 +1,13 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { resetEnv } from "../config/env.js";
 import { resetMailer, sendInviteEmail, sendMagicLinkEmail, sendMail } from "./mailer.js";
 
 describe("mailer", () => {
   afterEach(() => {
+    delete process.env.RESEND_API_KEY;
     resetMailer();
     resetEnv();
+    vi.unstubAllGlobals();
   });
 
   it("sends through nodemailer in test (json transport)", async () => {
@@ -16,6 +18,25 @@ describe("mailer", () => {
       html: "<p>Hello</p>",
     });
     expect(result.delivered).toBe(true);
+  });
+
+  it("sends through Resend over HTTPS when RESEND_API_KEY is set", async () => {
+    process.env.RESEND_API_KEY = "re_test";
+    resetEnv();
+    const fetchMock = vi.fn(
+      async () => new Response(JSON.stringify({ id: "msg_1" }), { status: 200 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    await sendMail({
+      to: "qs@example.com",
+      subject: "Test",
+      text: "Hello",
+      html: "<p>Hello</p>",
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.resend.com/emails",
+      expect.objectContaining({ method: "POST" }),
+    );
   });
 
   it("builds a magic-link message with the verify URL", async () => {

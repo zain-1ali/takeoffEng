@@ -22,6 +22,7 @@ const schema = z.object({
   SMTP_USER: z.string().optional().default(""),
   SMTP_PASS: z.string().optional().default(""),
   SMTP_FROM: z.string().default("TakeOff Studio <noreply@takeoff.local>"),
+  RESEND_API_KEY: z.string().optional().default(""),
 });
 
 export type Env = z.infer<typeof schema>;

@@ -1,4 +1,3 @@
-import { lookup } from "node:dns/promises";
 import nodemailer from "nodemailer";
 import type { Transporter } from "nodemailer";
 import { problem } from "../common/problem.js";
@@ -11,13 +10,14 @@ export function resetMailer(): void {
 }
 
 export function mailConfigured(): boolean {
-  return Boolean(env().SMTP_HOST);
+  const settings = env();
+  return Boolean(settings.RESEND_API_KEY || settings.SMTP_HOST);
 }
 
-async function getTransport(): Promise<Transporter | null> {
+function smtpTransport(): Transporter | null {
   if (transport !== undefined) return transport;
   const settings = env();
-  if (settings.NODE_ENV === "test") {
+  if (settings.NODE_ENV === "test" && !settings.RESEND_API_KEY) {
     transport = nodemailer.createTransport({ jsonTransport: true });
     return transport;
   }
@@ -25,25 +25,13 @@ async function getTransport(): Promise<Transporter | null> {
     transport = null;
     return null;
   }
-  const gmail = settings.SMTP_HOST.toLowerCase().includes("gmail.com");
-  const port =
-    gmail && settings.NODE_ENV === "production" && settings.SMTP_PORT === 587
-      ? 465
-      : settings.SMTP_PORT;
-  const secure = port === 465 ? true : settings.SMTP_SECURE;
-  const ipv4 = await lookup(settings.SMTP_HOST, { family: 4 });
-  console.info(`[mail] SMTP ${settings.SMTP_HOST} -> ${ipv4.address}:${port}`);
   transport = nodemailer.createTransport({
-    host: ipv4.address,
-    port,
-    secure,
+    host: settings.SMTP_HOST,
+    port: settings.SMTP_PORT,
+    secure: settings.SMTP_SECURE || settings.SMTP_PORT === 465,
     auth: settings.SMTP_USER
       ? { user: settings.SMTP_USER, pass: settings.SMTP_PASS.replaceAll(" ", "") }
       : undefined,
-    tls: { servername: settings.SMTP_HOST },
-    connectionTimeout: 15_000,
-    greetingTimeout: 15_000,
-    socketTimeout: 15_000,
   });
   return transport;
 }
@@ -55,19 +43,25 @@ export async function sendMail(message: {
   html: string;
 }): Promise<{ delivered: boolean }> {
   const settings = env();
-  const sender = await getTransport();
+  if (settings.RESEND_API_KEY) {
+    await sendWithResend(message, settings.RESEND_API_KEY);
+    return { delivered: true };
+  }
+
+  const sender = smtpTransport();
   if (!sender) {
     if (settings.NODE_ENV === "production") {
       throw problem(
         503,
         "mail_not_configured",
         "Email is not configured",
-        "The server cannot send email until SMTP is configured.",
+        "Railway blocks Gmail SMTP. Set RESEND_API_KEY and send mail over HTTPS.",
       );
     }
     console.info(`[mail] ${message.subject} -> ${message.to}\n${message.text}`);
     return { delivered: false };
   }
+
   try {
     await sender.sendMail({
       from: mailFrom(),
@@ -79,17 +73,34 @@ export async function sendMail(message: {
   } catch (err) {
     const raw = err instanceof Error ? err.message : "SMTP send failed";
     console.error("[mail] send failed", raw);
-    const blocked = /ENETUNREACH|ETIMEDOUT|timeout|ECONNREFUSED/i.test(raw);
-    throw problem(
-      502,
-      "mail_failed",
-      "Email could not be sent",
-      blocked
-        ? `${raw}. Railway cannot open an SMTP connection to Gmail (IPv6 is unreachable and ports 465/587 are often blocked). Use an HTTP email API such as Resend or SendGrid.`
-        : raw,
-    );
+    throw problem(502, "mail_failed", "Email could not be sent", raw);
   }
   return { delivered: true };
+}
+
+async function sendWithResend(
+  message: { to: string; subject: string; text: string; html: string },
+  apiKey: string,
+): Promise<void> {
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: mailFrom(),
+      to: [message.to],
+      subject: message.subject,
+      text: message.text,
+      html: message.html,
+    }),
+  });
+  if (!response.ok) {
+    const body = await response.text();
+    console.error("[mail] Resend failed", response.status, body);
+    throw problem(502, "mail_failed", "Email could not be sent", body.slice(0, 300));
+  }
 }
 
 export async function sendMagicLinkEmail(params: {
@@ -190,8 +201,11 @@ function emailLayout(params: {
 
 function mailFrom(): string {
   const settings = env();
-  const user = settings.SMTP_USER;
   const from = settings.SMTP_FROM.trim();
+  if (settings.RESEND_API_KEY && (from.includes("you@gmail.com") || from.includes("noreply@takeoff.local") || !from.includes("@"))) {
+    return "TakeOff Studio <onboarding@resend.dev>";
+  }
+  const user = settings.SMTP_USER;
   if (
     user &&
     (!from.includes("@") ||
