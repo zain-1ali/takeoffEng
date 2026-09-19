@@ -41,7 +41,7 @@ export function LoginPage() {
       {error ? <p className="alert">{error}</p> : null}
       {sent ? (
         <p className="alert ok">
-          Check {email} for a sign-in link.
+          Check {email} for a sign-in message, including the spam folder.
           {sent.verifyUrl ? (
             <>
               {" "}
@@ -106,7 +106,7 @@ export function SignupPage() {
       {error ? <p className="alert">{error}</p> : null}
       {sent ? (
         <p className="alert ok">
-          Check {email} to verify your address.
+          Check {email} to verify your address, including the spam folder.
           {sent.verifyUrl ? (
             <>
               {" "}

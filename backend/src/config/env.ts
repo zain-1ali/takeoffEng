@@ -22,6 +22,8 @@ const schema = z.object({
   SMTP_USER: z.string().optional().default(""),
   SMTP_PASS: z.string().optional().default(""),
   SMTP_FROM: z.string().default("TakeOff Studio <noreply@takeoff.local>"),
+  MAIL_FROM: z.string().optional().default(""),
+  MAIL_REPLY_TO: z.string().optional().default(""),
   RESEND_API_KEY: z.string().optional().default(""),
 });
 

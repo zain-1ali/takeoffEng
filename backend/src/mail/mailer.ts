@@ -66,6 +66,7 @@ export async function sendMail(message: {
     await sender.sendMail({
       from: mailFrom(),
       to: message.to,
+      replyTo: mailReplyTo() || undefined,
       subject: message.subject,
       text: message.text,
       html: message.html,
@@ -91,6 +92,7 @@ async function sendWithResend(
     body: JSON.stringify({
       from: mailFrom(),
       to: [message.to],
+      reply_to: mailReplyTo() || undefined,
       subject: message.subject,
       text: message.text,
       html: message.html,
@@ -113,22 +115,27 @@ export async function sendMagicLinkEmail(params: {
   const text = [
     greeting,
     "",
-    "Use this link to sign in to TakeOff Studio:",
+    "Someone requested a sign-in to TakeOff Studio for this email address.",
+    "If that was you, open the address below to continue. You do not need a password.",
+    "",
     params.verifyUrl,
     "",
-    `This link expires in ${minutes} minutes. If you did not request it, you can ignore this email.`,
+    `This sign-in expires in ${minutes} minutes.`,
+    "If you did not ask for this, you can ignore the message. Nobody can sign in without this email.",
+    "",
+    "TakeOff Studio",
   ].join("\n");
   await sendMail({
     to: params.to,
-    subject: "Your TakeOff Studio sign-in link",
+    subject: "Sign in to TakeOff Studio",
     text,
     html: emailLayout({
       title: "Sign in to TakeOff Studio",
       intro: greeting,
-      body: "Use the button below to sign in. No password is required.",
-      actionLabel: "Open sign-in link",
+      body: "Someone requested a sign-in for this email address. If that was you, continue below. You do not need a password.",
+      actionLabel: "Continue sign-in",
       actionUrl: params.verifyUrl,
-      footer: `This link expires in ${minutes} minutes. If you did not request it, you can ignore this email.`,
+      footer: `This sign-in expires in ${minutes} minutes. If you did not ask for this, ignore the message.`,
     }),
   });
 }
@@ -201,21 +208,34 @@ function emailLayout(params: {
 
 function mailFrom(): string {
   const settings = env();
-  const from = settings.SMTP_FROM.trim();
-  if (settings.RESEND_API_KEY && (from.includes("you@gmail.com") || from.includes("noreply@takeoff.local") || !from.includes("@"))) {
-    return "TakeOff Studio <onboarding@resend.dev>";
+  const configured = (settings.MAIL_FROM || settings.SMTP_FROM).trim();
+  if (isPlaceholderFrom(configured)) {
+    if (settings.RESEND_API_KEY) {
+      console.warn(
+        "[mail] MAIL_FROM is not a verified domain address. Shared Resend senders often land in spam. Set MAIL_FROM to an address on a domain you verified in Resend.",
+      );
+      return "TakeOff Studio <onboarding@resend.dev>";
+    }
+    if (settings.SMTP_USER) return `TakeOff Studio <${settings.SMTP_USER}>`;
   }
-  const user = settings.SMTP_USER;
-  if (
-    user &&
-    (!from.includes("@") ||
-      from.includes("you@gmail.com") ||
-      from.includes("noreply@takeoff.local"))
-  ) {
-    const label = from.replace(/<[^>]*>/g, "").replaceAll('"', "").trim() || "TakeOff Studio";
-    return `${label} <${user}>`;
-  }
-  return from;
+  return configured;
+}
+
+function mailReplyTo(): string {
+  const settings = env();
+  if (settings.MAIL_REPLY_TO.trim()) return settings.MAIL_REPLY_TO.trim();
+  const from = mailFrom();
+  const match = from.match(/<([^>]+)>/);
+  return match?.[1] ?? from;
+}
+
+function isPlaceholderFrom(value: string): boolean {
+  return (
+    !value.includes("@") ||
+    value.includes("you@gmail.com") ||
+    value.includes("noreply@takeoff.local") ||
+    value.includes("onboarding@resend.dev")
+  );
 }
 
 function escapeHtml(value: string): string {
