@@ -29,14 +29,28 @@ export async function seedOrgDatabank(
       category: CATEGORY[resource.category],
       name: resource.name,
       unit: resource.unit,
-      rate: String(resource.rate),
-      rateValue: resource.rate,
+      rate: "0",
+      rateValue: 0,
       currency,
       note: resource.note || null,
     }));
   if (docs.length) await Resource.insertMany(docs);
+  await zeroStarterDatabankRates(orgId);
   if (options.replace) {
     await Organization.updateOne({ _id: orgId }, { $inc: { databankVersion: 1 } });
   }
   return docs.length;
+}
+
+/** Clear catalog starter prices that the user has not replaced with their own rates. */
+export async function zeroStarterDatabankRates(orgId: string): Promise<number> {
+  const priced = await Resource.find({ orgId, rateValue: { $gt: 0 } }).select("code rateValue").lean();
+  if (!priced.length) return 0;
+  const defaults = new Map(allDefaultResources().map((row) => [row.code, row.rate]));
+  const ids = priced
+    .filter((row) => defaults.get(row.code) === row.rateValue)
+    .map((row) => row._id);
+  if (!ids.length) return 0;
+  const result = await Resource.updateMany({ _id: { $in: ids } }, { $set: { rate: "0", rateValue: 0 } });
+  return result.modifiedCount;
 }

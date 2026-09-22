@@ -52,6 +52,7 @@ describe("Phase 4 projects, documents and reports", () => {
     expect(created.body.id).toBeTruthy();
     expect(created.body.buildingType).toBe("FOUNDATION");
     expect(created.body.summary.concrete).toBeGreaterThan(0);
+    expect(created.body.summary.total).toBe(0);
     const projectId = created.body.id as string;
 
     const second = await request(app)

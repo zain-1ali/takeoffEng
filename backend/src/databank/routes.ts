@@ -63,7 +63,7 @@ async function orgMeta(orgId: string) {
   const org = await Organization.findById(orgId).lean();
   return {
     currency: org?.databankCurrency ?? "USD",
-    priceBasis: org?.priceBasis ?? "Indicative starter prices – replace with your local rates",
+    priceBasis: org?.priceBasis ?? "Add your local rates – new projects stay at zero until you do",
     version: org?.databankVersion ?? 1,
   };
 }
@@ -83,6 +83,7 @@ databankRouter.get(
       const rx = new RegExp(query.q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
       filter.$or = [{ code: rx }, { name: rx }, { note: rx }];
     }
+    await seedOrgDatabank(req.orgId!);
     const [rows, meta] = await Promise.all([
       Resource.find(filter).sort({ category: 1, code: 1 }).lean(),
       orgMeta(req.orgId!),

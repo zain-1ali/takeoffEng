@@ -39,7 +39,7 @@ export function RaReportScreen() {
   const bills = groupBoq(boq?.rows ?? []);
   const total = boq?.subtotal ?? 0;
   const ra = raOf(doc);
-  const market = ra.market || databank?.priceBasis || "Indicative starter prices – replace with your local rates";
+  const market = ra.market || databank?.priceBasis || "Add your local rates – new projects stay at zero until you do";
   const tools = ra.tools ?? 3;
   const oh = ra.oh ?? 10;
   const profit = ra.profit ?? 10;

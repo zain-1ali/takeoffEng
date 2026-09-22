@@ -90,7 +90,7 @@ export function pricingFrom(project: FullProject): PricingContext {
   const ra = extras.ra && typeof extras.ra === "object" && !Array.isArray(extras.ra)
     ? extras.ra as Record<string, unknown>
     : {};
-  const resources = extras.resources?.length ? extras.resources : allDefaultResources();
+  const resources = Array.isArray(extras.resources) ? extras.resources : allDefaultResources();
   return {
     project: project as PricingContext["project"],
     resources,

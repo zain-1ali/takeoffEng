@@ -47,6 +47,14 @@ describe("engine runner parity", () => {
     expect(zeroTax.split.some((row) => row.value > 0)).toBe(true);
   });
 
+  it("prices a project at zero when the databank has no rates", () => {
+    const project = createCompleteBuildingExample();
+    const empty = runProject({ ...project, resources: [] } as typeof project & { resources: [] });
+    expect(empty.totals.subtotal).toBe(0);
+    expect(empty.totals.total).toBe(0);
+    expect(empty.boq.items.every((row) => row.rate === 0 || row.amount === 0)).toBe(true);
+  });
+
   it("uses org resources, custom recipes and tools from the document", () => {
     const project = createCompleteBuildingExample();
     const base = runProject(project);

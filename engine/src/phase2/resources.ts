@@ -145,6 +145,11 @@ export function allDefaultResources(): Resource[] {
   return roofxResourcesEnsure(roofResourcesEnsure(mepResourcesEnsure(finResourcesEnsure(raDefaults()))));
 }
 
+/** Catalog items with no prices. Used so new workspaces stay at zero until the user types rates. */
+export function blankResources(): Resource[] {
+  return allDefaultResources().map((row) => ({ ...row, rate: 0 }));
+}
+
 export const DEFAULT_MATERIAL_FACTORS: Readonly<MaterialFactors> = {
   readymix: false, concWaste: 5, steelWaste: 5, stock: 12, wire: 10,
   meshLap: 15, meshWaste: 5, uses: 4, fwWaste: 10, timber: 3.5,

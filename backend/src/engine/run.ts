@@ -25,6 +25,7 @@ import type { ProjectDoc } from "../models/project.js";
 import type { BuildingType } from "../models/enums.js";
 import { engineBuildingType } from "../projects/defaults.js";
 import { customRatesFromState, recipeLinesFrom } from "./customRates.js";
+import { seedOrgDatabank } from "../databank/seed.js";
 import { projectParams } from "./params.js";
 
 const CATEGORY: Record<ResourceCategory, EngineCategory> = {
@@ -75,6 +76,7 @@ export async function runEngine(
 ): Promise<EngineBundle> {
   const project = toEngineProject(record, stateJson);
   const result = compute(project);
+  await seedOrgDatabank(record.orgId);
   const [resources, customRows, manuals, settings] = await Promise.all([
     Resource.find({ orgId: record.orgId }).lean(),
     CustomRate.find({ projectId: record.id }).lean(),

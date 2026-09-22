@@ -55,7 +55,7 @@ export function DatabankProvider({ children }: { children: ReactNode }) {
   const auth = useAuth();
   const [resources, setResources] = useState<DatabankResource[]>([]);
   const [currency, setCurrency] = useState("USD");
-  const [priceBasis, setPriceBasis] = useState("Indicative starter prices – replace with your local rates");
+  const [priceBasis, setPriceBasis] = useState("Add your local rates – new projects stay at zero until you do");
   const [version, setVersion] = useState(1);
   const [status, setStatus] = useState<DatabankContextValue["status"]>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -65,7 +65,7 @@ export function DatabankProvider({ children }: { children: ReactNode }) {
   const applyPayload = useCallback((payload: DatabankPayload) => {
     setResources(payload.resources ?? []);
     setCurrency(payload.currency ?? "USD");
-    setPriceBasis(payload.priceBasis ?? "Indicative starter prices – replace with your local rates");
+    setPriceBasis(payload.priceBasis ?? "Add your local rates – new projects stay at zero until you do");
     setVersion(payload.version ?? 1);
   }, []);
 

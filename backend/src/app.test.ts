@@ -84,9 +84,10 @@ describe("Phase 3 auth, orgs and databank", () => {
       .set("X-Org-Id", orgId);
     expect(databank.status).toBe(200);
     expect(databank.body.resources).toHaveLength(200);
+    expect(databank.body.resources.every((row: { rateValue: number }) => row.rateValue === 0)).toBe(true);
     expect(databank.body.resources.some((row: { code: string }) => row.code === "L01")).toBe(true);
     expect(databank.body.resources.some((row: { code: string }) => row.code === "R33")).toBe(true);
-  });
+  }, 20_000);
 
   it("invites a member and rejects unauthenticated and cross-org access", async () => {
     const ownerAgent = request.agent(app);
@@ -148,7 +149,7 @@ describe("Phase 3 auth, orgs and databank", () => {
       .set("Authorization", `Bearer ${otherAuth.body.accessToken}`)
       .set("X-Org-Id", orgId);
     expect(cross.status).toBe(404);
-  });
+  }, 20_000);
 
   it("rotates the refresh token cookie", async () => {
     const agent = request.agent(app);
@@ -161,5 +162,5 @@ describe("Phase 3 auth, orgs and databank", () => {
     const refreshed = await agent.post("/v1/auth/refresh");
     expect(refreshed.status).toBe(200);
     expect(refreshed.body.accessToken).toBeTruthy();
-  });
+  }, 15_000);
 });

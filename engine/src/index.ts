@@ -33,6 +33,7 @@ export { bomResourcePrice, bomRows, bomTotal } from "./phase2/bom.js";
 export { boqRows, boqTotals } from "./phase2/boq.js";
 export {
   allDefaultResources,
+  blankResources,
   DEFAULT_MATERIAL_FACTORS,
   ensureResources,
   finResourcesEnsure,

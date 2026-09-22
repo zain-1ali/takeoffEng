@@ -20,7 +20,7 @@ const organizationSchema = registerVirtualId(
       databankVersion: { type: Number, default: 1 },
       priceBasis: {
         type: String,
-        default: "Indicative starter prices – replace with your local rates",
+        default: "Add your local rates – new projects stay at zero until you do",
       },
     },
     schemaOptions,

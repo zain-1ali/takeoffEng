@@ -15,6 +15,7 @@
     "build": "npm run build -w @takeoff/engine && npm run build -w backend && npm run build -w frontend",
     "build:engine": "npm run build -w @takeoff/engine",
     "build:api": "npm run build -w @takeoff/engine && npm run build -w backend",
+    "start": "npm run start -w backend",
     "start:api": "npm run start -w backend"
   },
   "devDependencies": {
@@ -22,5 +23,6 @@
   },
   "engines": {
     "node": ">=22"
-  }
+  },
+  "packageManager": "npm@11.17.0"
 }
