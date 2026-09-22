@@ -76,7 +76,7 @@ export async function runEngine(
 ): Promise<EngineBundle> {
   const project = toEngineProject(record, stateJson);
   const result = compute(project);
-  await seedOrgDatabank(record.orgId);
+  await seedOrgDatabank(String(record.orgId));
   const [resources, customRows, manuals, settings] = await Promise.all([
     Resource.find({ orgId: record.orgId }).lean(),
     CustomRate.find({ projectId: record.id }).lean(),
