@@ -1,7 +1,8 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthProvider.js";
 import { api, ApiError } from "../lib/api.js";
+import { loadGoogleIdentity, type GoogleProviders } from "../lib/google.js";
 
 interface AuthSession {
   accessToken: string;
@@ -14,8 +15,9 @@ export function LoginPage() {
   const next = params.get("next") || "/app";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(params.get("error"));
   const [busy, setBusy] = useState(false);
+  const google = useGoogleClientId();
 
   useEffect(() => {
     if (auth.ready && auth.user) navigate(next, { replace: true });
@@ -50,6 +52,16 @@ export function LoginPage() {
           {busy ? "Signing in…" : "Sign in"}
         </button>
       </form>
+      <GoogleSignIn
+        clientId={google}
+        busy={busy}
+        onBusy={setBusy}
+        onError={setError}
+        onSession={async (token) => {
+          await auth.setSession(token);
+          navigate(next, { replace: true });
+        }}
+      />
       <p className="mt-4 text-sm text-muted">
         New here? <Link to="/signup">Create a workspace</Link>
       </p>
@@ -65,8 +77,9 @@ export function SignupPage() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [orgName, setOrgName] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(params.get("error"));
   const [busy, setBusy] = useState(false);
+  const google = useGoogleClientId();
   const type = params.get("type") ?? undefined;
   const plan = params.get("plan");
   const next = params.get("next");
@@ -108,11 +121,108 @@ export function SignupPage() {
           {busy ? "Creating…" : "Create workspace"}
         </button>
       </form>
+      <GoogleSignIn
+        clientId={google}
+        name={name}
+        orgName={orgName}
+        busy={busy}
+        onBusy={setBusy}
+        onError={setError}
+        onSession={async (token) => {
+          await auth.setSession(token);
+          navigate(next || (type ? `/app/new?type=${encodeURIComponent(type)}` : "/app"), { replace: true });
+        }}
+      />
       <p className="mt-4 text-sm text-muted">
         Already have an account? <Link to="/login">Sign in</Link>
       </p>
     </AuthShell>
   );
+}
+
+function GoogleSignIn({
+  clientId,
+  name,
+  orgName,
+  busy,
+  onBusy,
+  onError,
+  onSession,
+}: {
+  clientId: string | null;
+  name?: string;
+  orgName?: string;
+  busy: boolean;
+  onBusy: (next: boolean) => void;
+  onError: (message: string | null) => void;
+  onSession: (token: string) => Promise<void>;
+}) {
+  const host = useRef<HTMLDivElement>(null);
+  const extras = useRef({ name, orgName, onSession, onError, onBusy });
+  extras.current = { name, orgName, onSession, onError, onBusy };
+
+  useEffect(() => {
+    if (!clientId || !host.current) return;
+    let alive = true;
+    void loadGoogleIdentity()
+      .then((google) => {
+        if (!alive || !host.current) return;
+        google.initialize({
+          client_id: clientId,
+          callback: (response) => {
+            void (async () => {
+              extras.current.onBusy(true);
+              extras.current.onError(null);
+              try {
+                const result = await api<AuthSession>("/v1/auth/google", {
+                  body: {
+                    idToken: response.credential,
+                    name: extras.current.name?.trim() || undefined,
+                    orgName: extras.current.orgName?.trim() || undefined,
+                  },
+                });
+                await extras.current.onSession(result.accessToken);
+              } catch (err) {
+                extras.current.onError(err instanceof ApiError ? err.message : "Could not sign in with Google.");
+              } finally {
+                extras.current.onBusy(false);
+              }
+            })();
+          },
+        });
+        host.current.innerHTML = "";
+        google.renderButton(host.current, {
+          theme: "outline",
+          size: "large",
+          text: "continue_with",
+          width: 360,
+        });
+      })
+      .catch(() => {
+        extras.current.onError("Could not load Google sign-in.");
+      });
+    return () => {
+      alive = false;
+    };
+  }, [clientId]);
+
+  if (!clientId) return null;
+  return (
+    <>
+      <p className="orline">or</p>
+      <div className="googlebtn" ref={host} hidden={busy} />
+    </>
+  );
+}
+
+function useGoogleClientId(): string | null {
+  const [clientId, setClientId] = useState<string | null>(null);
+  useEffect(() => {
+    void api<GoogleProviders>("/v1/auth/providers")
+      .then((result) => setClientId(result.google && result.clientId ? result.clientId : null))
+      .catch(() => setClientId(null));
+  }, []);
+  return clientId;
 }
 
 function EmailField({ value, onChange }: { value: string; onChange: (next: string) => void }) {

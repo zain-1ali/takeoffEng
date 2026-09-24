@@ -20,6 +20,7 @@ export default function App() {
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/auth/callback" element={<Navigate to="/login" replace />} />
           <Route path="/verify" element={<Navigate to="/login" replace />} />
           <Route path="/invite/:token" element={<InvitePage />} />
           <Route path="/legal/privacy" element={<LegalPage kind="privacy" />} />

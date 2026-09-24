@@ -30,13 +30,19 @@ describe("auth screens", () => {
     auth.setSession.mockResolvedValue(undefined);
     vi.stubGlobal(
       "fetch",
-      vi.fn(
-        async () =>
-          new Response(JSON.stringify({ accessToken: "tok_1" }), {
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes("/v1/auth/providers")) {
+          return new Response(JSON.stringify({ google: false }), {
             status: 200,
             headers: { "Content-Type": "application/json" },
-          }),
-      ),
+          });
+        }
+        return new Response(JSON.stringify({ accessToken: "tok_1" }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }),
     );
   });
 
@@ -58,6 +64,28 @@ describe("auth screens", () => {
         body: JSON.stringify({ email: "qs@example.com", password: "password1" }),
       }),
     );
+  });
+
+  it("shows Google sign-in when the API has a client id", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes("/v1/auth/providers")) {
+          return new Response(JSON.stringify({ google: true, clientId: "gid.apps.googleusercontent.com" }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+        return new Response(JSON.stringify({}), { status: 200, headers: { "Content-Type": "application/json" } });
+      }),
+    );
+    render(
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText("or")).toBeInTheDocument();
   });
 
   it("creates a workspace with email and password", async () => {

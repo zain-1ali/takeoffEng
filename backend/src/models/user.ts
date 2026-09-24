@@ -6,6 +6,7 @@ const userSchema = registerVirtualId(
     {
       _id: stringId(),
       email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+      googleId: { type: String, unique: true, sparse: true },
       passwordHash: { type: String, default: null, select: false },
       name: { type: String, default: null },
       avatarKey: { type: String, default: null },

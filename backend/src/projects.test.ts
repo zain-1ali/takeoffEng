@@ -51,7 +51,8 @@ describe("Phase 4 projects, documents and reports", () => {
     expect(created.status).toBe(201);
     expect(created.body.id).toBeTruthy();
     expect(created.body.buildingType).toBe("FOUNDATION");
-    expect(created.body.summary.concrete).toBeGreaterThan(0);
+    expect(created.body.summary.concrete).toBe(0);
+    expect(created.body.summary.steelKg).toBe(0);
     expect(created.body.summary.total).toBe(0);
     const projectId = created.body.id as string;
 
@@ -101,8 +102,10 @@ describe("Phase 4 projects, documents and reports", () => {
 
     const updatedState = structuredClone(document.body.stateJson) as {
       types: { pad: Array<{ L: unknown }> };
+      pl: { pad: Array<Record<string, unknown>> };
     };
     updatedState.types.pad[0]!.L = "1.8*2";
+    updatedState.pl.pad = [{ id: "pf-test", type: "F1", no: 1, ref: "Test pad" }];
     const saved = await request(app)
       .put(`/v1/projects/${projectId}/document`)
       .set(headers)

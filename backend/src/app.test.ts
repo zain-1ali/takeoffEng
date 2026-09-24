@@ -39,6 +39,11 @@ describe("Phase 3 auth, orgs and databank", () => {
     const ready = await request(app).get("/ready");
     expect(ready.status).toBe(200);
     expect(ready.body.mongodb).toBe("connected");
+    const providers = await request(app).get("/v1/auth/providers");
+    expect(providers.status).toBe(200);
+    expect(providers.body.google).toBe(false);
+    const google = await request(app).post("/v1/auth/google").send({ idToken: "x" });
+    expect(google.status).toBe(503);
   });
 
   it("signs up with email and password, seeds the databank, and issues tokens", async () => {

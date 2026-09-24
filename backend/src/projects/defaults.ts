@@ -44,14 +44,51 @@ export function initialStateJson(
 }
 
 function seedFor(type: BuildingType): object {
-  if (type === "ROAD") return createRoadDefaults();
-  if (type === "BRIDGE") return createBridgeDefaults();
+  if (type === "ROAD") return blankTakeoff(createRoadDefaults());
+  if (type === "BRIDGE") return blankTakeoff(createBridgeDefaults());
   if (type === "FOUNDATION") {
     const project = createMultiStoreyExample();
     project.btype = "foundation";
-    return project;
+    return blankTakeoff(project);
   }
   const project = createCompleteBuildingExample("simple");
   project.btype = type === "SINGLE" ? "single" : "multi";
-  return project;
+  return blankTakeoff(project);
+}
+
+/** Keep type catalogs, but drop measured work so new projects start at quantity zero. */
+export function blankTakeoff<T extends object>(project: T): T {
+  const next = structuredClone(project) as T & {
+    pl?: Record<string, unknown>;
+    sog?: Record<string, unknown>;
+    road?: Record<string, unknown>;
+    bacc?: Record<string, unknown>;
+    roofx?: Record<string, unknown>;
+  };
+  if (next.pl) emptyArrays(next.pl);
+  if (next.roofx) emptyArrays(next.roofx);
+  if (next.road) zeroNumbers(next.road);
+  if (next.bacc) zeroNumbers(next.bacc);
+  if (next.sog) {
+    next.sog.area = 0;
+    next.sog.edge = 0;
+    next.sog.t = 0;
+    next.sog.hardcore = 0;
+    next.sog.sand = 0;
+    next.sog.dpm = false;
+    next.sog.topsoil = 0;
+  }
+  return next;
+}
+
+function emptyArrays(value: Record<string, unknown>): void {
+  for (const key of Object.keys(value)) {
+    if (Array.isArray(value[key])) value[key] = [];
+  }
+}
+
+function zeroNumbers(value: Record<string, unknown>): void {
+  for (const key of Object.keys(value)) {
+    if (typeof value[key] === "number") value[key] = 0;
+  }
 }

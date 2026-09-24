@@ -25,6 +25,7 @@ const schema = z.object({
   MAIL_FROM: z.string().optional().default(""),
   MAIL_REPLY_TO: z.string().optional().default(""),
   RESEND_API_KEY: z.string().optional().default(""),
+  GOOGLE_CLIENT_ID: z.string().optional().default(""),
 });
 
 export type Env = z.infer<typeof schema>;

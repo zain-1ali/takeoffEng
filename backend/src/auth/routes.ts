@@ -8,6 +8,7 @@ import { env } from "../config/env.js";
 import { requireAuth } from "../middleware/auth.js";
 import { Session, User } from "../models/index.js";
 import { createOrganization } from "../orgs/service.js";
+import { defaultOrgName, googleClientId, googleEnabled, googleProfileFromIdToken } from "./google.js";
 import { hashPassword, verifyPassword } from "./passwords.js";
 import {
   REFRESH_COOKIE,
@@ -21,6 +22,33 @@ export const authRouter = Router();
 
 const emailSchema = z.string().trim().email().transform((value) => value.toLowerCase());
 const passwordSchema = z.string().min(8).max(80);
+
+authRouter.get("/providers", (_req, res) => {
+  res.json({
+    google: googleEnabled(),
+    clientId: googleEnabled() ? googleClientId() : undefined,
+  });
+});
+
+authRouter.post(
+  "/google",
+  asyncHandler(async (req, res) => {
+    if (!googleEnabled()) {
+      throw problem(503, "google_disabled", "Google sign-in is not configured", "Set GOOGLE_CLIENT_ID.");
+    }
+    const body = z
+      .object({
+        idToken: z.string().min(1),
+        name: z.string().trim().max(80).optional(),
+        orgName: z.string().trim().max(80).optional(),
+      })
+      .parse(req.body);
+    const profile = await googleProfileFromIdToken(body.idToken);
+    const { user, created } = await upsertGoogleUser(profile, body);
+    const session = await issueSession(req, res, user, created ? "user.signup" : "user.login");
+    res.status(created ? 201 : 200).json(session);
+  }),
+);
 
 authRouter.post(
   "/signup",
@@ -125,6 +153,32 @@ async function issueSession(
     expiresIn: env().ACCESS_TTL_SECONDS,
     user: publicUser(user),
   };
+}
+
+async function upsertGoogleUser(
+  profile: { sub: string; email: string; name: string },
+  state: { name?: string; orgName?: string },
+) {
+  let user = await User.findOne({ googleId: profile.sub, deletedAt: null });
+  if (!user) user = await User.findOne({ email: profile.email, deletedAt: null });
+  if (user) {
+    if (!user.googleId) {
+      user.googleId = profile.sub;
+      if (!user.name) user.name = profile.name;
+      await user.save();
+    }
+    return { user, created: false };
+  }
+  user = await User.create({
+    email: profile.email,
+    name: (state.name || profile.name).slice(0, 80),
+    googleId: profile.sub,
+  });
+  await createOrganization({
+    name: state.orgName || defaultOrgName(user.name ?? profile.name, profile.email),
+    ownerId: user.id,
+  });
+  return { user, created: true };
 }
 
 function publicUser(user: { id: string; email: string; name?: string | null; locale?: string }) {

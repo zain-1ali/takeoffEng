@@ -809,6 +809,28 @@
   gap: 12px;
 }
 
+.orline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0 4px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.orline::before,
+.orline::after {
+  content: "";
+  flex: 1;
+  border-top: 1px solid var(--line);
+}
+
+.googlebtn {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
 .alert {
   background: var(--warnbg);
   color: var(--warn);
