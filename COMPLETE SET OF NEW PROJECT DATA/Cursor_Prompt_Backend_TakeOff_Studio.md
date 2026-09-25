@@ -38,11 +38,6 @@ It must be secure, observable and fully typed, and work for any country, currenc
   - helmet, strict CORS allow-list, `@nestjs/throttler` (Redis), CSRF on cookie routes
   - argon2 where hashing is needed, AES-256-GCM field encryption for provider references, audit log
 - **Tests:** Jest + Supertest + Testcontainers (Postgres, Redis, MinIO), Stripe/Flutterwave/Paystack webhook fixtures.
-- **DevOps:**
-  - multi-stage Dockerfile
-  - `docker-compose.yml` (api, web, postgres, redis, minio, mailpit, stripe-cli)
-  - GitHub Actions (lint, test, build, migrate)
-  - `.env.example`, `docs/RUNBOOK.md`
 
 ## 3. Modules
 
