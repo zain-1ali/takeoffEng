@@ -3,6 +3,10 @@ import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { ALL_TYPES, BUILDING_TYPES, isAllowedType } from "../../lib/catalog.js";
 import { asRecord, stringOf } from "../../lib/doc.js";
 import { formatNumber } from "../../lib/format.js";
+import { CommentDrawer } from "../collab/CommentDrawer.js";
+import { useOptionalCollab } from "../collab/CollabProvider.js";
+import { TeamScreen } from "../collab/TeamScreen.js";
+import { initials } from "../collab/roles.js";
 import { useAuth } from "../auth/AuthProvider.js";
 import { BearingsScreen } from "./BearingsScreen.js";
 import { ComingSoonScreen } from "./ComingSoonScreen.js";
@@ -47,7 +51,8 @@ function EditorBody({ view }: { view: string }) {
   const navigate = useNavigate();
   const { id } = useParams();
   const auth = useAuth();
-  const { meta, doc, sync, error, setPath, saveNow, reload } = useProject();
+  const { meta, doc, sync, error, setPath, saveNow, reload, overwriteMine } = useProject();
+  const collab = useOptionalCollab();
   const { result } = useEditorComputed();
   const allowed = auth.entitlements?.types ?? ALL_TYPES;
   const btype = stringOf(doc?.btype, "multi");
@@ -103,6 +108,7 @@ function EditorBody({ view }: { view: string }) {
   else if (view === "dims") screen = <DimsScreen />;
   else if (view === "rates") screen = <RatesScreen />;
   else if (view === "resources") screen = <ResourcesScreen />;
+  else if (view === "team") screen = <TeamScreen />;
   else if (TYPE_SCHEMA[view]) screen = <KindScreen kind={view} />;
   else screen = <ComingSoonScreen view={view} />;
 
@@ -123,15 +129,31 @@ function EditorBody({ view }: { view: string }) {
           />
           <small>{metaLine || "Take-off editor"}</small>
         </div>
+        <span className="peersbar" aria-label="People online">
+          {collab?.peers.slice(0, 5).map((peer) => (
+            <span className="peer" key={peer.userId} title={`${peer.name} – ${peer.view || "online"}`}>
+              <span className="av">{initials(peer.name)}</span>
+            </span>
+          ))}
+          {(collab?.peers.length ?? 0) > 5 ? <span className="peer more">+{(collab?.peers.length ?? 0) - 5}</span> : null}
+        </span>
         <span className={pill.className}>{pill.text}</span>
         <span className="planpill">Plan: <b>{planLabel}</b></span>
-        <button className="btn" type="button" onClick={() => void saveNow()}>Save project</button>
+        <button className="btn" type="button" disabled={collab ? !collab.canWrite : false} onClick={() => void saveNow()}>Save project</button>
         <button className="btn" type="button" onClick={() => void auth.logout()}>Sign out</button>
       </header>
       {sync === "conflict" ? (
         <div className="alert" style={{ margin: 0, borderRadius: 0 }}>
-          {error}{" "}
-          <button className="btn sm" type="button" onClick={() => void reload()}>Reload</button>
+          A newer version was saved while you had unsaved changes.{" "}
+          <button className="btn sm" type="button" onClick={() => void reload()}>Load their version</button>
+          <button className="btn sm danger" type="button" disabled={collab ? !collab.canWrite : false} onClick={() => void overwriteMine()}>
+            Overwrite with mine
+          </button>
+        </div>
+      ) : null}
+      {collab && !collab.canWrite ? (
+        <div className="alert warnish" style={{ margin: 0, borderRadius: 0 }}>
+          You have view-only access. You can look around, but you cannot save this take-off.
         </div>
       ) : null}
       <div className="shell">
@@ -214,6 +236,7 @@ function EditorBody({ view }: { view: string }) {
               </div>
             ) : null}
             {screen}
+            <CommentDrawer />
           </main>
           {hasSidePanel(view) ? (
             <aside className="side">

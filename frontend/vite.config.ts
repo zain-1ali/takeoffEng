@@ -21,6 +21,7 @@ export default defineConfig({
       "/health": "http://localhost:4000",
       "/ready": "http://localhost:4000",
       "/v1": "http://localhost:4000",
+      "/rt": { target: "http://localhost:4000", ws: true },
     },
   },
   preview: {
@@ -29,6 +30,7 @@ export default defineConfig({
       "/health": "http://localhost:4000",
       "/ready": "http://localhost:4000",
       "/v1": "http://localhost:4000",
+      "/rt": { target: "http://localhost:4000", ws: true },
     },
   },
   test: {

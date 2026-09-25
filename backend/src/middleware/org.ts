@@ -26,7 +26,12 @@ export function requireRole(...roles: MembershipRole[]) {
 }
 
 async function resolveOrg(req: Request, required: boolean): Promise<void> {
-  const header = req.header("x-org-id")?.trim();
+  const queryOrg = typeof req.query.org_id === "string"
+    ? req.query.org_id
+    : typeof req.query.orgId === "string"
+      ? req.query.orgId
+      : "";
+  const header = req.header("x-org-id")?.trim() || queryOrg.trim();
   if (!header) {
     if (required) throw forbidden("X-Org-Id header is required.");
     return;

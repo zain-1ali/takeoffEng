@@ -38,8 +38,10 @@ async function authenticate(req: Request): Promise<void> {
 
 function bearer(req: Request): string | undefined {
   const header = req.headers.authorization;
-  if (!header?.startsWith("Bearer ")) return undefined;
-  return header.slice(7);
+  if (header?.startsWith("Bearer ")) return header.slice(7);
+  const query = req.query.access_token;
+  if (typeof query === "string" && query) return query;
+  return undefined;
 }
 
 function cookieValue(req: Request, name: string): string | undefined {

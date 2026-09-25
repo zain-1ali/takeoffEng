@@ -268,9 +268,7 @@ export const NAV_REPORTS: readonly [string, string][] = [
   ["dims", "Dimension sheet"],
 ];
 
-export const LATER: Record<string, string> = {
-  team: "Team workspace ships in Phase 11.",
-};
+export const LATER: Record<string, string> = {};
 
 export const BTYPE_LABEL: Record<string, string> = {
   foundation: "Foundations only",

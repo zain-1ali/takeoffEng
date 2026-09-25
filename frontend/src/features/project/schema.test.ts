@@ -59,8 +59,8 @@ describe("kindsVisible", () => {
     expect(visibleInputSteps("bridge").map(([view]) => view)).toContain("bacc");
   });
 
-  it("keeps later-phase copy only for pricing and team", () => {
-    expect(Object.keys(LATER).sort()).toEqual(["team"]);
+  it("has no leftover later-phase screens after team workspace", () => {
+    expect(Object.keys(LATER)).toEqual([]);
   });
 });
 

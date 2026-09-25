@@ -26,6 +26,17 @@ const schema = z.object({
   MAIL_REPLY_TO: z.string().optional().default(""),
   RESEND_API_KEY: z.string().optional().default(""),
   GOOGLE_CLIENT_ID: z.string().optional().default(""),
+  FILE_ROOT: z.string().optional().default("uploads"),
+  RAILWAY_ENDPOINT: z.string().optional().default(""),
+  RAILWAY_BUCKET: z.string().optional().default(""),
+  RAILWAY_ACCESS_KEY_ID: z.string().optional().default(""),
+  RAILWAY_SECRET_ACCESS_KEY: z.string().optional().default(""),
+  RAILWAY_REGION: z.string().optional().default(""),
+  S3_ENDPOINT: z.string().optional().default(""),
+  S3_REGION: z.string().optional().default("auto"),
+  S3_BUCKET: z.string().optional().default(""),
+  S3_ACCESS_KEY_ID: z.string().optional().default(""),
+  S3_SECRET_ACCESS_KEY: z.string().optional().default(""),
 });
 
 export type Env = z.infer<typeof schema>;

@@ -33,6 +33,8 @@ interface ProjectContextValue {
   saveNow: () => Promise<void>;
   saveVersion: () => Promise<number | null>;
   reload: () => Promise<void>;
+  refreshMeta: () => Promise<void>;
+  overwriteMine: () => Promise<void>;
 }
 
 const ProjectContext = createContext<ProjectContextValue | null>(null);
@@ -161,6 +163,24 @@ export function ProjectProvider({ id, children }: { id: string; children: ReactN
     if (next) await persist(next, versionRef.current);
   }, [doc, persist]);
 
+  const refreshMeta = useCallback(async () => {
+    if (!auth.token) return;
+    const project = await api<ProjectRecord>(`/v1/projects/${id}`, { token: auth.token, orgId: auth.orgId });
+    setMeta(project);
+  }, [auth.orgId, auth.token, id]);
+
+  const overwriteMine = useCallback(async () => {
+    if (!auth.token || !id) return;
+    const latest = await api<DocumentPayload>(`/v1/projects/${id}/document`, {
+      token: auth.token,
+      orgId: auth.orgId,
+    });
+    const mine = pending.current ?? doc;
+    if (!mine) return;
+    versionRef.current = latest.version;
+    await persist(mine, latest.version);
+  }, [auth.orgId, auth.token, doc, id, persist]);
+
   const saveVersion = useCallback(async () => {
     if (!auth.token) return null;
     await saveNow();
@@ -173,8 +193,8 @@ export function ProjectProvider({ id, children }: { id: string; children: ReactN
   }, [auth.orgId, auth.token, id, saveNow]);
 
   const value = useMemo<ProjectContextValue>(
-    () => ({ meta, doc, version, sync, error, setPath, replaceDoc, saveNow, saveVersion, reload: load }),
-    [doc, error, load, meta, replaceDoc, saveNow, saveVersion, setPath, sync, version],
+    () => ({ meta, doc, version, sync, error, setPath, replaceDoc, saveNow, saveVersion, reload: load, refreshMeta, overwriteMine }),
+    [doc, error, load, meta, overwriteMine, refreshMeta, replaceDoc, saveNow, saveVersion, setPath, sync, version],
   );
 
   return <ProjectContext.Provider value={value}>{children}</ProjectContext.Provider>;

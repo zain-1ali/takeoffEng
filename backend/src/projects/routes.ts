@@ -16,6 +16,10 @@ import {
   STAGES,
   Subscription,
 } from "../models/index.js";
+import { emitProject } from "../collab/realtime.js";
+import { collabRouter } from "../collab/routes.js";
+import { projectExportsRouter } from "../exports/routes.js";
+import { coverRouter } from "../files/cover.js";
 import { requireProject } from "./access.js";
 import { defaultProjectName, initialStateJson } from "./defaults.js";
 import { assertNumericFormulas } from "./formulas.js";
@@ -334,6 +338,11 @@ projectsRouter.put(
       ip: req.ip,
       data: { version: document.version },
     });
+    emitProject(req.project!.id, "document.saved", {
+      projectId: req.project!.id,
+      version: document.version,
+      updatedById: req.userId,
+    });
     res.set("ETag", `"${document.version}"`);
     res.json({
       projectId: req.project!.id,
@@ -526,6 +535,9 @@ projectsRouter.get(
 );
 
 registerProjectRateRoutes(projectsRouter);
+projectsRouter.use("/:id/exports", projectExportsRouter);
+projectsRouter.use("/:id/cover", coverRouter);
+projectsRouter.use("/:id", collabRouter);
 
 async function saveSettings(req: Request, res: Response): Promise<void> {
   assertActive(req);

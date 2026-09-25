@@ -89,28 +89,6 @@ const rateSettingsSchema = registerVirtualId(
 export type RateSettingsDoc = InferSchemaType<typeof rateSettingsSchema> & { id: string };
 export const RateSettings = getModel("RateSettings", rateSettingsSchema);
 
-const exportJobSchema = registerVirtualId(
-  new Schema(
-    {
-      _id: stringId(),
-      projectId: { type: String, required: true, index: true },
-      kind: { type: String, required: true, enum: EXPORT_KINDS },
-      status: { type: String, default: "QUEUED", enum: JOB_STATUSES },
-      progress: { type: Number, default: 0 },
-      fileKey: { type: String, default: null },
-      error: { type: String, default: null },
-      watermark: { type: Boolean, default: false },
-      requestedById: { type: String, required: true },
-      finishedAt: { type: Date, default: null },
-    },
-    schemaOptions,
-  ),
-);
-exportJobSchema.index({ projectId: 1, createdAt: -1 });
-
-export type ExportJobDoc = InferSchemaType<typeof exportJobSchema> & { id: string };
-export const ExportJob = getModel("ExportJob", exportJobSchema);
-
 const subscriptionSchema = registerVirtualId(
   new Schema(
     {
@@ -240,6 +218,31 @@ auditLogSchema.index({ orgId: 1, createdAt: -1 });
 
 export type AuditLogDoc = InferSchemaType<typeof auditLogSchema> & { id: string };
 export const AuditLog = getModel("AuditLog", auditLogSchema);
+
+const exportJobSchema = registerVirtualId(
+  new Schema(
+    {
+      _id: stringId(),
+      orgId: { type: String, required: true, index: true },
+      projectId: { type: String, required: true, index: true },
+      kind: { type: String, required: true, enum: EXPORT_KINDS },
+      status: { type: String, required: true, enum: JOB_STATUSES, default: "QUEUED" },
+      progress: { type: Number, default: 0 },
+      fileKey: { type: String, default: null },
+      fileName: { type: String, default: null },
+      contentType: { type: String, default: null },
+      error: { type: String, default: null },
+      watermark: { type: Boolean, default: false },
+      requestedById: { type: String, required: true },
+      finishedAt: { type: Date, default: null },
+    },
+    schemaOptions,
+  ),
+);
+exportJobSchema.index({ orgId: 1, createdAt: -1 });
+
+export type ExportJobDoc = InferSchemaType<typeof exportJobSchema> & { id: string };
+export const ExportJob = getModel("ExportJob", exportJobSchema);
 
 const featureFlagSchema = new Schema(
   {

@@ -84,6 +84,69 @@ export async function api<T>(path: string, options: ApiOptions = {}): Promise<T>
   return data as T;
 }
 
+export async function apiBlob(path: string, options: ApiOptions = {}): Promise<Blob> {
+  const response = await rawRequest(path, options);
+  if (!response.ok) {
+    const data = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+    throw new ApiError(
+      response.status,
+      String(data.type ?? "error"),
+      String(data.detail ?? data.title ?? data.message ?? `Request failed (${response.status})`),
+      data,
+    );
+  }
+  return response.blob();
+}
+
+export async function apiBinary<T>(
+  path: string,
+  body: Blob | ArrayBuffer,
+  options: ApiOptions & { contentType: string },
+): Promise<T> {
+  const headers = new Headers();
+  headers.set("Accept", "application/json");
+  headers.set("Content-Type", options.contentType);
+  if (options.token) headers.set("Authorization", `Bearer ${options.token}`);
+  if (options.orgId) headers.set("X-Org-Id", options.orgId);
+  if (options.headers) {
+    for (const [key, value] of Object.entries(options.headers)) headers.set(key, value);
+  }
+  const url = apiUrl(path);
+  const response = await fetch(url, {
+    method: options.method ?? "POST",
+    headers,
+    credentials: "include",
+    body,
+  });
+  if (response.status === 204) return undefined as T;
+  const data = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+  if (!response.ok) {
+    throw new ApiError(
+      response.status,
+      String(data.type ?? "error"),
+      String(data.detail ?? data.title ?? data.message ?? `Request failed (${response.status})`),
+      data,
+    );
+  }
+  return data as T;
+}
+
+async function rawRequest(path: string, options: ApiOptions): Promise<Response> {
+  const headers = new Headers();
+  headers.set("Accept", "*/*");
+  if (options.token) headers.set("Authorization", `Bearer ${options.token}`);
+  if (options.orgId) headers.set("X-Org-Id", options.orgId);
+  if (options.headers) {
+    for (const [key, value] of Object.entries(options.headers)) headers.set(key, value);
+  }
+  const url = apiUrl(path);
+  return fetch(url, {
+    method: options.method ?? "GET",
+    headers,
+    credentials: "include",
+  });
+}
+
 function networkErrorMessage(url: string): string {
   if (import.meta.env.DEV) {
     return "Could not reach the API. Check that the backend is running.";

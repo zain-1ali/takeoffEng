@@ -1,5 +1,7 @@
-import { useId, type ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useId, useState, type ReactNode } from "react";
+import { Link, useParams } from "react-router-dom";
+import { useAuth } from "../../auth/AuthProvider.js";
+import { apiBlob } from "../../../lib/api.js";
 import { stringOf, type DocMap } from "../../../lib/doc.js";
 import type { ProjectRecord } from "../../../lib/types.js";
 import { coverFields, moneyOrDash } from "./reportData.js";
@@ -51,6 +53,45 @@ export function ReportToolbar({
       {children}
     </div>
   );
+}
+
+export function CoverHero({
+  image,
+  coverImageKey,
+  fallbackType,
+}: {
+  image: string;
+  coverImageKey: string | null;
+  fallbackType: string;
+}) {
+  const { id } = useParams();
+  const auth = useAuth();
+  const [src, setSrc] = useState(image);
+
+  useEffect(() => {
+    if (!coverImageKey || !id || !auth.token) {
+      setSrc(image);
+      return;
+    }
+    let objectUrl = "";
+    let cancelled = false;
+    void apiBlob(`/v1/projects/${id}/cover`, { token: auth.token, orgId: auth.orgId })
+      .then((blob) => {
+        if (cancelled) return;
+        objectUrl = URL.createObjectURL(blob);
+        setSrc(objectUrl);
+      })
+      .catch(() => {
+        if (!cancelled) setSrc(image);
+      });
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [auth.orgId, auth.token, coverImageKey, id, image]);
+
+  if (src) return <img src={src} alt="Project image" />;
+  return <CoverArt btype={fallbackType} />;
 }
 
 export function CoverArt({ btype }: { btype: string }) {
@@ -143,7 +184,7 @@ export function CoverPage({
   return (
     <section className="page cover">
       <div className="chero">
-        {cover.image ? <img src={cover.image} alt="Project image" /> : <CoverArt btype={cover.btype} />}
+        <CoverHero image={cover.image} coverImageKey={cover.coverImageKey} fallbackType={cover.btype} />
         <span className="cdoc">{title}</span>
       </div>
       <div className="cbody">

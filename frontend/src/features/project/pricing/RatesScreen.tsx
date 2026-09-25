@@ -4,6 +4,7 @@ import { NumberField } from "../../../ui/index.js";
 import { hasPaidFeature } from "../../../lib/catalog.js";
 import { asRecord, stringOf } from "../../../lib/doc.js";
 import { formatNumber } from "../../../lib/format.js";
+import { CommentButton } from "../../collab/CommentButton.js";
 import { useAuth } from "../../auth/AuthProvider.js";
 import { pricingFrom } from "../../editor/runProject.js";
 import { useEditorComputed, usePricedProject } from "../computed.js";
@@ -165,9 +166,7 @@ export function RatesScreen() {
                   <div className="kicker">Item {item.item} · {analysis.family} · {item.code}</div>
                   <h2>
                     {item.desc}{" "}
-                    <button className="cmt" type="button" disabled title="Comments ship in Phase 11" aria-label={`Comments on item ${item.item}`}>
-                      <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M4 5h16v11H8l-4 4z" fill="currentColor" /></svg>
-                    </button>
+                    <CommentButton code={item.code} item={item.item} desc={item.desc} />
                   </h2>
                   <div className="rdq">
                     {formatNumber(item.quantity, item.unit === "t" ? 3 : 2, locale)} {item.unit} × {money(item.rate, 2, locale)} = <b>{money(item.amount, 2, locale)} {currency}</b>

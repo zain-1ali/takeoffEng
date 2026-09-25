@@ -1,7 +1,7 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider.js";
-import { api, ApiError } from "../../lib/api.js";
+import { api, apiBinary, ApiError } from "../../lib/api.js";
 import {
   ALL_TYPES,
   BUILDING_TYPES,
@@ -53,6 +53,7 @@ export function NewProjectWizard() {
     { role: "Client", org: "", contact: "" },
     { role: "Quantity surveyor", org: "", contact: "" },
   ]);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -116,6 +117,13 @@ export function NewProjectWizard() {
           stakeholders: stakeholders.filter((row) => row.role || row.org || row.contact),
         },
       });
+      if (coverFile) {
+        await apiBinary(`/v1/projects/${created.id}/cover`, coverFile, {
+          token: auth.token,
+          orgId: auth.orgId,
+          contentType: coverFile.type || "image/png",
+        });
+      }
       navigate(`/app/p/${created.id}`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not create the project.");
@@ -300,7 +308,16 @@ export function NewProjectWizard() {
                   </div>
                 </div>
               </div>
-              <p className="mt-4 text-sm text-muted">Cover image upload ships with file storage in a later phase.</p>
+              <div className="f" style={{ marginTop: 16 }}>
+                <label htmlFor="pcover">Cover image</label>
+                <input
+                  id="pcover"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  onChange={(event) => setCoverFile(event.target.files?.[0] ?? null)}
+                />
+                {coverFile ? <p className="hint">{coverFile.name}</p> : <p className="hint">Optional. PNG, JPEG, WebP or GIF, up to 4 MB.</p>}
+              </div>
               <h3 className="mt-4 font-cond text-xl">Stakeholders</h3>
               {stakeholders.map((row, index) => (
                 <div className="fg" key={index}>

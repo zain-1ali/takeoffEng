@@ -8,6 +8,7 @@ interface AuthState {
   user: PublicUser | null;
   orgId: string | null;
   orgName: string | null;
+  role: string | null;
   plan: string;
   entitlements: MeResponse["entitlements"] | null;
   token: string | null;
@@ -26,6 +27,7 @@ const GUEST: AuthState = {
   user: null,
   orgId: null,
   orgName: null,
+  role: null,
   plan: "STARTER",
   entitlements: null,
   token: null,
@@ -44,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user: me.user,
       orgId: nextOrg,
       orgName: me.org?.name ?? null,
+      role: me.role,
       plan: me.plan,
       entitlements: me.entitlements,
       token,

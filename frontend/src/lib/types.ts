@@ -45,4 +45,5 @@ export interface ProjectRecord extends ProjectCard {
   roofMode?: "SIMPLE" | "COMPLEX";
   fxRate?: number;
   databankCurrency?: string;
+  coverImageKey?: string | null;
 }

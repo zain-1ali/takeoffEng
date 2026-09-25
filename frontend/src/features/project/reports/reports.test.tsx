@@ -62,12 +62,20 @@ const { setPath, doc, result, computed } = vi.hoisted(() => {
 });
 
 vi.mock("../ProjectProvider.js", () => ({
-  useProject: () => ({ doc, meta: { name: "Phase 9 test", currency: "USD", stage: "PRE_TENDER" }, setPath }),
+  useProject: () => ({ doc, meta: { id: "p1", name: "Phase 9 test", currency: "USD", stage: "PRE_TENDER" }, setPath }),
   asFullProject: (value: unknown) => value,
 }));
 
 vi.mock("../computed.js", () => ({
   useEditorComputed: () => computed,
+}));
+
+vi.mock("../../auth/AuthProvider.js", () => ({
+  useAuth: () => ({
+    token: "tok",
+    orgId: "org1",
+    entitlements: { types: ["FOUNDATION", "SINGLE", "MULTI"] },
+  }),
 }));
 
 describe("Phase 9 report screens", () => {
@@ -93,6 +101,7 @@ describe("Phase 9 report screens", () => {
     expect(screen.getByRole("heading", { name: "Summary" })).toBeInTheDocument();
     expect(screen.getByText(/Total carried to form of tender/)).toBeInTheDocument();
     expect(screen.getByText(/Bill No. 1 – Concrete work/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Download Excel" })).toBeEnabled();
   });
 
   it("filters the bar schedule", async () => {

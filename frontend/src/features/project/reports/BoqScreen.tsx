@@ -1,6 +1,10 @@
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { NumberField } from "../../../ui/index.js";
 import { asRecord, stringOf } from "../../../lib/doc.js";
+import { downloadProjectExcel } from "../../../lib/exports.js";
+import { CommentButton } from "../../collab/CommentButton.js";
+import { useAuth } from "../../auth/AuthProvider.js";
 import { useProject } from "../ProjectProvider.js";
 import { useEditorComputed } from "../computed.js";
 import { Donut, Pareto, Waterfall } from "./charts.js";
@@ -21,7 +25,11 @@ export function BoqScreen() {
   const { doc, meta, setPath } = useProject();
   const { boq, result, totals, params, split, status, error } = useEditorComputed();
   const { id } = useParams();
+  const projectId = id ?? meta?.id;
+  const auth = useAuth();
   const navigate = useNavigate();
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
   const currency = currencyOf(doc, meta);
   const locale = localeOf(doc);
   const settings = reportSettings(doc, meta);
@@ -55,10 +63,25 @@ export function BoqScreen() {
             onChange={(value) => setPath("report.vat", value)}
           />
         </label>
-        <button className="btn sm" type="button" onClick={() => id && navigate(`/app/p/${id}/rates`)}>Rate analysis</button>
+        <button className="btn sm" type="button" onClick={() => projectId && navigate(`/app/p/${projectId}/rates`)}>Rate analysis</button>
         <button className="btn sm" type="button" onClick={printReport}>Print or save PDF</button>
-        <button className="btn sm" type="button" disabled title="Excel export ships in Phase 12">Download Excel</button>
+        <button
+          className="btn sm"
+          type="button"
+          disabled={exporting || !projectId || !auth.token}
+          onClick={() => {
+            if (!projectId || !auth.token) return;
+            setExporting(true);
+            setExportError(null);
+            void downloadProjectExcel({ projectId, token: auth.token, orgId: auth.orgId })
+              .catch((err) => setExportError(err instanceof Error ? err.message : "Excel export failed."))
+              .finally(() => setExporting(false));
+          }}
+        >
+          {exporting ? "Preparing Excel…" : "Download Excel"}
+        </button>
       </ReportToolbar>
+      {exportError ? <p className="alert">{exportError}</p> : null}
       <ComputingNote status={status} error={error} />
       <CoverPage title="Bills of quantities" doc={doc} meta={meta} params={params} />
       <section className="page sumpage">
@@ -185,9 +208,7 @@ export function BoqScreen() {
                       <td className="item">{row.item}</td>
                       <td>
                         {row.desc}{" "}
-                        <button className="cmt" type="button" disabled title="Comments ship in Phase 11" aria-label={`Comments on item ${row.item}`}>
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
-                        </button>
+                        <CommentButton code={row.code} item={row.item} desc={row.desc} />
                       </td>
                       <td className="n">{money(row.quantity, row.unit === "t" ? 3 : 2, locale)}</td>
                       <td>{row.unit}</td>

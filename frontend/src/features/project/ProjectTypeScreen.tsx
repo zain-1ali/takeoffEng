@@ -1,4 +1,5 @@
 import { NumberField, TextField } from "../../ui/index.js";
+import { apiBinary, ApiError } from "../../lib/api.js";
 import { ALL_TYPES, BUILDING_TYPES, isAllowedType } from "../../lib/catalog.js";
 import { asRecord, stringOf } from "../../lib/doc.js";
 import { useAuth } from "../auth/AuthProvider.js";
@@ -6,7 +7,7 @@ import { useProject } from "./ProjectProvider.js";
 import { engineType } from "./schema.js";
 
 export function ProjectTypeScreen() {
-  const { doc, setPath } = useProject();
+  const { doc, meta, setPath, refreshMeta } = useProject();
   const auth = useAuth();
   if (!doc) return null;
   const btype = stringOf(doc.btype, "multi");
@@ -71,6 +72,28 @@ export function ProjectTypeScreen() {
           <TextField label="Drawing references" value={stringOf(project.drawing)} onChange={(value) => setPath("project.drawing", value)} />
           <TextField label="Prepared by" value={stringOf(project.by)} onChange={(value) => setPath("project.by", value)} />
           <TextField label="Date" value={stringOf(project.date)} onChange={(value) => setPath("project.date", value)} />
+        </div>
+        <div className="f" style={{ marginTop: 12 }}>
+          <label htmlFor="cover-image">Cover image</label>
+          <input
+            id="cover-image"
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/gif"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (!file || !meta?.id || !auth.token) return;
+              void apiBinary(`/v1/projects/${meta.id}/cover`, file, {
+                token: auth.token,
+                orgId: auth.orgId,
+                contentType: file.type || "image/png",
+              })
+                .then(() => refreshMeta())
+                .catch((err) => {
+                  window.alert(err instanceof ApiError ? err.message : "Could not upload the cover image.");
+                });
+            }}
+          />
+          {meta?.coverImageKey ? <p className="hint">Cover image saved to this project.</p> : null}
         </div>
       </fieldset>
       <fieldset>

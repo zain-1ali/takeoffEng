@@ -228,6 +228,7 @@ export function coverFields(doc: DocMap | null, meta?: ProjectRecord | null) {
     client: stringOf(project.client),
     drawing: stringOf(project.drawing, meta?.drawings ?? ""),
     image: stringOf(project.image),
+    coverImageKey: meta?.coverImageKey ?? null,
     contract: stringOf(project.contract),
     currency: currencyOf(doc, meta),
     stage: stageOf(doc, meta),

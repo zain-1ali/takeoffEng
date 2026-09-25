@@ -11,6 +11,8 @@ import { mongoStatus } from "./db/connect.js";
 import { errorHandler } from "./middleware/error.js";
 import { invitationsRouter, orgsRouter } from "./orgs/routes.js";
 import { projectsRouter } from "./projects/routes.js";
+import { notificationsRouter } from "./collab/routes.js";
+import { exportsRouter } from "./exports/routes.js";
 import { meRouter } from "./users/routes.js";
 
 export function createApp() {
@@ -61,6 +63,8 @@ export function createApp() {
   app.use("/v1/invitations", invitationsRouter);
   app.use("/v1/databank", databankRouter);
   app.use("/v1/projects", projectsRouter);
+  app.use("/v1/exports", exportsRouter);
+  app.use("/v1", notificationsRouter);
   app.use(errorHandler);
 
   return app;
