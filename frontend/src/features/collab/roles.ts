@@ -1,17 +1,17 @@
-const RANK: Record<string, number> = {
+const RANK = {
   VIEWER: 0,
   COMMENTER: 1,
   EDITOR: 2,
   ADMIN: 3,
   OWNER: 4,
-};
+} as const;
 
 export function canEdit(role: string | null | undefined): boolean {
-  return (RANK[role ?? ""] ?? 0) >= RANK.EDITOR;
+  return (RANK[role as keyof typeof RANK] ?? 0) >= RANK.EDITOR;
 }
 
 export function canComment(role: string | null | undefined): boolean {
-  return (RANK[role ?? ""] ?? 0) >= RANK.COMMENTER;
+  return (RANK[role as keyof typeof RANK] ?? 0) >= RANK.COMMENTER;
 }
 
 export function initials(name: string): string {
